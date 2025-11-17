@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MCP Admin</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; background: #0f1115; color: #f4f4f4; }
+      header { margin-bottom: 2rem; }
+      section { border: 1px solid #2b2f36; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; background: #16191f; }
+      h2 { margin-top: 0; }
+      label { display: block; margin: 0.4rem 0; }
+      input[type="text"], input[type="number"] { width: 100%; padding: 0.4rem; background: #0f1115; border: 1px solid #2b2f36; color: #f4f4f4; }
+      button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; background: #2563eb; color: #fff; }
+      pre { overflow-x: auto; background: #0b0d12; padding: 1rem; border-radius: 6px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #2b2f36; padding: 0.5rem; text-align: left; }
+      .status-ok { color: #4ade80; }
+      .status-error { color: #f87171; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>MCP Control Panel</h1>
+      <p>Status: <strong class="{{ 'status-ok' if deep_status == 'ok' else 'status-error' }}">{{ deep_status | upper }}</strong></p>
+      <p>Total Requests: {{ metrics['total_requests'] }} · Errors: {{ metrics['total_errors'] }} · Uptime: {{ metrics['uptime_seconds'] }}s</p>
+    </header>
+
+    <section>
+      <h2>Health Checks</h2>
+      <button type="button" onclick="refreshHealth()">Run Deep Health</button>
+      <button type="button" onclick="refreshRailway()">Railway Snapshot</button>
+      <pre id="health-output">{{ deep_json }}</pre>
+      <pre id="railway-output"></pre>
+    </section>
+
+    <section>
+      <h2>Settings</h2>
+      <form method="post" action="/admin/settings">
+        <input type="hidden" name="token" value="{{ token_hint }}" />
+        <label>
+          <input type="checkbox" name="allow_anonymous" {% if settings.allow_anonymous %}checked{% endif %} />
+          Allow anonymous requests
+        </label>
+        <label>
+          Rate limit per IP (requests/minute; leave blank to disable)
+          <input type="number" name="rate_limit_per_ip" min="0" value="{{ settings.rate_limit_per_ip or '' }}" />
+        </label>
+        <label>
+          Secret key (required when anonymous disabled)
+          <input type="text" name="secret_key" value="{{ settings.secret_key or '' }}" />
+        </label>
+        <button type="submit">Save Settings</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Metrics</h2>
+      <button type="button" onclick="refreshMetrics()">Refresh Metrics</button>
+      <pre id="metrics-output">{{ metrics_json }}</pre>
+    </section>
+
+    <section>
+      <h2>Log Tail</h2>
+      <button type="button" onclick="refreshLogs()">Fetch Logs</button>
+      <pre id="logs-output">Loading...</pre>
+    </section>
+
+    <script>
+      const token = "{{ token_hint }}";
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+
+      async function refreshHealth() {
+        const res = await fetch(`/admin/api/health/deep${tokenParam}`);
+        const data = await res.json();
+        document.getElementById("health-output").textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function refreshRailway() {
+        const res = await fetch(`/admin/api/health/railway${tokenParam}`);
+        const data = await res.json();
+        document.getElementById("railway-output").textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function refreshMetrics() {
+        const res = await fetch(`/admin/api/metrics${tokenParam}`);
+        const data = await res.json();
+        document.getElementById("metrics-output").textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function refreshLogs() {
+        const res = await fetch(`/admin/api/logs${tokenParam}`);
+        const data = await res.json();
+        document.getElementById("logs-output").textContent = data.tail || "No log entries";
+      }
+
+      refreshLogs();
+    </script>
+  </body>
+</html>

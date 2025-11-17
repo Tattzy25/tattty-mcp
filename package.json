@@ -1,0 +1,16 @@
+{
+  "name": "tattty-mcp",
+  "version": "1.0.0",
+  "description": "A production-ready FastAPI application that exposes MCP-style tools over plain HTTP. The server ships with three tools (echo, resize-image, text-stats), supports bearer auth, rate limiting, OpenAPI docs, and can be deployed via Docker, ngrok, or any container platform.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "mcp:tavily": "node scripts/tavily-health.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.22.0"
+  }
+}

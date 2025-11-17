@@ -1,0 +1,9 @@
+host: 0.0.0.0
+port: 8000
+log_level: info
+allow_anonymous: true
+rate_limit_per_ip: 30
+cors:
+  allow_origins: ["*"]
+  allow_methods: ["*"]
+  allow_headers: ["*"]
