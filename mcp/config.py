@@ -72,7 +72,13 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
 def load_settings() -> Settings:
     """Load settings from config.yaml (and optional MCP_CONFIG path)."""
 
-    config_path = Path(os.environ.get("MCP_CONFIG", Path(__file__).with_name("config.yaml")))
+    default_path = Path(__file__).with_name("config.yaml")
+    config_env = os.environ.get("MCP_CONFIG")
+    config_path = Path(config_env) if config_env else default_path
+
+    if config_path.is_dir():
+        config_path = config_path / "config.yaml"
+
     raw = _read_config_file(config_path)
     merged = _apply_env_overrides(raw)
     return Settings(**merged)
