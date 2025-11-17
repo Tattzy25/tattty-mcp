@@ -2,97 +2,694 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>MCP Admin</title>
+    <title>MCP Admin Dashboard</title>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 2rem; background: #0f1115; color: #f4f4f4; }
-      header { margin-bottom: 2rem; }
-      section { border: 1px solid #2b2f36; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; background: #16191f; }
-      h2 { margin-top: 0; }
-      label { display: block; margin: 0.4rem 0; }
-      input[type="text"], input[type="number"] { width: 100%; padding: 0.4rem; background: #0f1115; border: 1px solid #2b2f36; color: #f4f4f4; }
-      button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; background: #2563eb; color: #fff; }
-      pre { overflow-x: auto; background: #0b0d12; padding: 1rem; border-radius: 6px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #2b2f36; padding: 0.5rem; text-align: left; }
-      .status-ok { color: #4ade80; }
-      .status-error { color: #f87171; }
+      :root {
+        color-scheme: dark;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --bg: #0d1017;
+        --panel: #161a23;
+        --border: #262b36;
+        --accent: #4f46e5;
+        --accent-soft: rgba(79, 70, 229, 0.15);
+        --text-dim: #9ca3af;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --error: #ef4444;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem clamp(1rem, 4vw, 3rem);
+        background: var(--bg);
+        color: #f8fafc;
+      }
+
+      .hero {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+      }
+
+      .eyebrow {
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        margin: 0 0 0.25rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+      }
+
+      .subtitle {
+        margin-top: 0.5rem;
+        color: var(--text-dim);
+        max-width: 38rem;
+      }
+
+      .hero-status {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: 16rem;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+      }
+
+      .status-pill.ok {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--ok);
+      }
+
+      .status-pill.error {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--error);
+      }
+
+      .refresh-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+      }
+
+      .primary {
+        padding: 0.6rem 1.1rem;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), #6366f1);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .card h3 {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .card .value {
+        margin: 0.4rem 0 0.2rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+      }
+
+      .card .hint {
+        margin: 0;
+        color: var(--text-dim);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .panel-header h2 {
+        margin: 0;
+      }
+
+      .panel-actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .panel button {
+        padding: 0.45rem 0.9rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #1e2330;
+        color: #fff;
+        cursor: pointer;
+      }
+
+      form label {
+        display: block;
+        margin-bottom: 0.85rem;
+        font-weight: 500;
+      }
+
+      input[type="text"], input[type="number"] {
+        width: 100%;
+        margin-top: 0.4rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #0f131b;
+        color: #fff;
+      }
+
+      input[type="checkbox"] {
+        transform: scale(1.2);
+        margin-right: 0.5rem;
+      }
+
+      pre {
+        overflow-x: auto;
+        background: #0f131b;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid #1f2532;
+        font-size: 0.85rem;
+      }
+
+      details summary {
+        cursor: pointer;
+        margin-bottom: 0.7rem;
+        color: var(--text-dim);
+      }
+
+      ul.status-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      ul.status-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+        background: #101523;
+        border: 1px solid #1c2232;
+      }
+
+      .pill {
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .pill.ok { background: rgba(34, 197, 94, 0.15); color: var(--ok); }
+      .pill.warning { background: rgba(245, 158, 11, 0.15); color: var(--warn); }
+      .pill.error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+      .pill.unknown { background: rgba(148, 163, 184, 0.15); color: #cbd5f5; }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th, td {
+        padding: 0.5rem 0.3rem;
+        text-align: left;
+        border-bottom: 1px solid #1f2532;
+      }
+
+      th {
+        color: var(--text-dim);
+        font-weight: 500;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .grid-two {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        gap: 1.5rem;
+      }
+
+      .recent-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .recent-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .recent-item span {
+        color: var(--text-dim);
+      }
+
+      .help-box {
+        background: #101523;
+        border: 1px dashed var(--border);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+      }
+
+      @media (max-width: 640px) {
+        .hero-status { width: 100%; }
+        .panel-header { flex-direction: column; align-items: flex-start; }
+      }
     </style>
   </head>
   <body>
-    <header>
-      <h1>MCP Control Panel</h1>
-      <p>Status: <strong class="{{ 'status-ok' if deep_status == 'ok' else 'status-error' }}">{{ deep_status | upper }}</strong></p>
-      <p>Total Requests: {{ metrics['total_requests'] }} · Errors: {{ metrics['total_errors'] }} · Uptime: {{ metrics['uptime_seconds'] }}s</p>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Streamable MCP Toolkit</p>
+        <h1>Control Panel</h1>
+        <p class="subtitle">Flip auth switches, run health checks, and watch traffic without memorising curl commands.</p>
+      </div>
+      <div class="hero-status">
+        <div id="status-pill" class="status-pill {{ 'ok' if deep_status == 'ok' else 'error' }}">{{ deep_status | upper }}</div>
+        <div class="refresh-controls">
+          <label class="toggle"><input type="checkbox" id="auto-refresh" checked /> Auto-refresh every 15s</label>
+          <small id="last-updated">Last refresh: just now</small>
+        </div>
+        <button class="primary" type="button" onclick="refreshEverything()">Refresh now</button>
+      </div>
     </header>
 
-    <section>
-      <h2>Health Checks</h2>
-      <button type="button" onclick="refreshHealth()">Run Deep Health</button>
-      <button type="button" onclick="refreshRailway()">Railway Snapshot</button>
-      <pre id="health-output">{{ deep_json }}</pre>
-      <pre id="railway-output"></pre>
+    <section class="cards">
+      <article class="card">
+        <h3>Uptime</h3>
+        <p class="value" id="uptime-value">{{ metrics['uptime_seconds'] }}s</p>
+        <p class="hint">Since last restart</p>
+      </article>
+      <article class="card">
+        <h3>Total Requests</h3>
+        <p class="value" id="requests-value">{{ metrics['total_requests'] }}</p>
+        <p class="hint">All tool calls counted</p>
+      </article>
+      <article class="card">
+        <h3>Error Count</h3>
+        <p class="value" id="errors-value">{{ metrics['total_errors'] }}</p>
+        <p class="hint">5xx responses only</p>
+      </article>
+      <article class="card">
+        <h3>Rate Limit</h3>
+        <p class="value" id="rate-limit-value">{{ settings.rate_limit_per_ip or 'Off' }}</p>
+        <p class="hint">Requests/minute per IP</p>
+      </article>
     </section>
 
-    <section>
-      <h2>Settings</h2>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Health Checks</h2>
+          <p class="subtitle">Buttons run the same endpoints Railway pings (/health/deep & /health/railway).</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" onclick="refreshHealth()">Deep health</button>
+          <button type="button" onclick="refreshRailway()">Railway snapshot</button>
+        </div>
+      </div>
+      <div class="grid-two">
+        <div>
+          <h3>Core systems</h3>
+          <ul id="health-list" class="status-list"></ul>
+        </div>
+        <div>
+          <h3>Tool diagnostics</h3>
+          <ul id="tool-list" class="status-list"></ul>
+        </div>
+      </div>
+      <details>
+        <summary>Raw deep health JSON</summary>
+        <pre id="health-output">{{ deep_json | safe }}</pre>
+      </details>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Railway deploy view</h2>
+          <p class="subtitle">What Railway sees during rollout.</p>
+        </div>
+      </div>
+      <div class="grid-two">
+        <div class="help-box">
+          <p><strong>Status:</strong> <span id="railway-status">-</span></p>
+          <p><strong>Hostname:</strong> <span id="railway-host">-</span></p>
+          <p><strong>Checked at:</strong> <span id="railway-time">-</span></p>
+        </div>
+        <div>
+          <p>Tip: point Railway's health check to <code>/health/railway</code>. The endpoint wraps deep checks plus metrics in one payload.</p>
+        </div>
+      </div>
+      <details>
+        <summary>Raw Railway JSON</summary>
+        <pre id="railway-output">Call "Railway snapshot" to populate.</pre>
+      </details>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Runtime settings</h2>
+          <p class="subtitle">Toggles below edit in-memory settings instantly.</p>
+        </div>
+      </div>
+      <div class="help-box">
+        <p><strong>Anonymous access:</strong> {{ 'Enabled' if settings.allow_anonymous else 'Disabled (Bearer token required)' }}</p>
+        <p><strong>Admin token:</strong> {{ 'Configured' if settings.admin_token else 'Not set (panel open to anyone)' }}</p>
+      </div>
       <form method="post" action="/admin/settings">
         <input type="hidden" name="token" value="{{ token_hint }}" />
         <label>
           <input type="checkbox" name="allow_anonymous" {% if settings.allow_anonymous %}checked{% endif %} />
-          Allow anonymous requests
+          Allow anonymous requests (unchecked requires <code>Authorization: Bearer &lt;secret&gt;</code>)
         </label>
         <label>
           Rate limit per IP (requests/minute; leave blank to disable)
           <input type="number" name="rate_limit_per_ip" min="0" value="{{ settings.rate_limit_per_ip or '' }}" />
         </label>
         <label>
-          Secret key (required when anonymous disabled)
-          <input type="text" name="secret_key" value="{{ settings.secret_key or '' }}" />
+          Secret key (stored in memory only)
+          <input type="text" name="secret_key" value="{{ settings.secret_key or '' }}" placeholder="Paste new key here" />
         </label>
-        <button type="submit">Save Settings</button>
+        <button class="primary" type="submit">Save settings</button>
       </form>
     </section>
 
-    <section>
-      <h2>Metrics</h2>
-      <button type="button" onclick="refreshMetrics()">Refresh Metrics</button>
-      <pre id="metrics-output">{{ metrics_json }}</pre>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Live metrics</h2>
+          <p class="subtitle">Per-path counters and the last 10 requests.</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" onclick="refreshMetrics()">Refresh metrics</button>
+        </div>
+      </div>
+      <div class="grid-two">
+        <div>
+          <h3>Per-path traffic</h3>
+          <table>
+            <thead>
+              <tr><th>Path</th><th>Hits</th></tr>
+            </thead>
+            <tbody id="path-table-body"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Recent requests</h3>
+          <ul id="recent-requests" class="recent-list"></ul>
+        </div>
+      </div>
+      <details>
+        <summary>Raw metrics JSON</summary>
+        <pre id="metrics-output">{{ metrics_json | safe }}</pre>
+      </details>
     </section>
 
-    <section>
-      <h2>Log Tail</h2>
-      <button type="button" onclick="refreshLogs()">Fetch Logs</button>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Log tail</h2>
+          <p class="subtitle">Shows the latest structured log file entries.</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" onclick="refreshLogs()">Fetch logs</button>
+        </div>
+      </div>
       <pre id="logs-output">Loading...</pre>
     </section>
 
+    <script id="initial-health" type="application/json">{{ deep_json | safe }}</script>
+    <script id="initial-metrics" type="application/json">{{ metrics_json | safe }}</script>
     <script>
       const token = "{{ token_hint }}";
       const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+      const AUTO_REFRESH_MS = 15000;
+
+      const statusPill = document.getElementById("status-pill");
+      const uptimeValue = document.getElementById("uptime-value");
+      const requestsValue = document.getElementById("requests-value");
+      const errorsValue = document.getElementById("errors-value");
+      const rateLimitValue = document.getElementById("rate-limit-value");
+      const lastUpdatedEl = document.getElementById("last-updated");
+      const autoRefreshToggle = document.getElementById("auto-refresh");
+      const healthList = document.getElementById("health-list");
+      const toolList = document.getElementById("tool-list");
+      const healthOutput = document.getElementById("health-output");
+      const railwayOutput = document.getElementById("railway-output");
+      const metricsOutput = document.getElementById("metrics-output");
+      const pathTableBody = document.getElementById("path-table-body");
+      const recentList = document.getElementById("recent-requests");
+      const logsOutput = document.getElementById("logs-output");
+      const railwayStatus = document.getElementById("railway-status");
+      const railwayHost = document.getElementById("railway-host");
+      const railwayTime = document.getElementById("railway-time");
+
+      const statusClass = (status = "unknown") => {
+        const normalized = status.toLowerCase();
+        if (normalized === "ok") return "ok";
+        if (normalized === "warning") return "warning";
+        if (normalized === "error") return "error";
+        return "unknown";
+      };
+
+      const fetchJSON = async (path) => {
+        const response = await fetch(`${path}${tokenParam}`);
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+        return response.json();
+      };
+
+      const formatDuration = (seconds = 0) => {
+        const sec = Math.floor(seconds % 60);
+        const min = Math.floor((seconds / 60) % 60);
+        const hr = Math.floor(seconds / 3600);
+        if (hr) return `${hr}h ${min}m ${sec}s`;
+        if (min) return `${min}m ${sec}s`;
+        return `${sec}s`;
+      };
+
+      const renderStatusList = (target, entries) => {
+        target.innerHTML = "";
+        Object.entries(entries).forEach(([name, payload]) => {
+          if (name === "tools") return;
+          const li = document.createElement("li");
+          const label = document.createElement("span");
+          label.textContent = name.replace(/_/g, " ");
+          const pill = document.createElement("span");
+          pill.className = `pill ${statusClass(payload.status)}`;
+          pill.textContent = (payload.status || "unknown").toUpperCase();
+          li.append(label, pill);
+          target.appendChild(li);
+        });
+      };
+
+      const renderToolList = (entries = {}) => {
+        toolList.innerHTML = "";
+        Object.entries(entries).forEach(([name, payload]) => {
+          const li = document.createElement("li");
+          const label = document.createElement("span");
+          label.textContent = name;
+          const pill = document.createElement("span");
+          pill.className = `pill ${statusClass(payload.status)}`;
+          pill.textContent = (payload.status || "unknown").toUpperCase();
+          li.append(label, pill);
+          toolList.appendChild(li);
+        });
+        if (!Object.keys(entries).length) {
+          const li = document.createElement("li");
+          li.textContent = "No diagnostics configured.";
+          toolList.appendChild(li);
+        }
+      };
+
+      const renderHealth = (data) => {
+        if (!data) return;
+        statusPill.textContent = (data.status || "UNKNOWN").toUpperCase();
+        statusPill.className = `status-pill ${statusClass(data.status)}`;
+        renderStatusList(healthList, data.checks || {});
+        renderToolList((data.checks && data.checks.tools) || {});
+        healthOutput.textContent = JSON.stringify(data, null, 2);
+        markRefreshed();
+      };
+
+      const renderMetrics = (data) => {
+        if (!data) return;
+        uptimeValue.textContent = formatDuration(data.uptime_seconds);
+        requestsValue.textContent = data.total_requests ?? 0;
+        errorsValue.textContent = data.total_errors ?? 0;
+        rateLimitValue.textContent = rateLimitValue.textContent; // retains server-provided label
+        metricsOutput.textContent = JSON.stringify(data, null, 2);
+
+        pathTableBody.innerHTML = "";
+        const entries = Object.entries(data.per_path_counts || {});
+        if (!entries.length) {
+          const row = document.createElement("tr");
+          row.innerHTML = "<td colspan=2>No data yet</td>";
+          pathTableBody.appendChild(row);
+        } else {
+          entries.forEach(([path, count]) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${path}</td><td>${count}</td>`;
+            pathTableBody.appendChild(row);
+          });
+        }
+
+        recentList.innerHTML = "";
+        (data.recent_requests || []).slice(-10).forEach((req) => {
+          const item = document.createElement("li");
+          item.className = "recent-item";
+          item.innerHTML = `<strong>${req.method} ${req.path}</strong><span>${Math.round(req.duration_ms)} ms · ${new Date(req.timestamp * 1000).toLocaleTimeString()}</span>`;
+          recentList.appendChild(item);
+        });
+        if (!recentList.children.length) {
+          const item = document.createElement("li");
+          item.textContent = "No requests recorded.";
+          recentList.appendChild(item);
+        }
+        markRefreshed();
+      };
+
+      const renderRailway = (data) => {
+        if (!data) return;
+        railwayStatus.textContent = (data.status || "-").toUpperCase();
+        railwayHost.textContent = data.hostname || "-";
+        railwayTime.textContent = data.timestamp ? new Date(data.timestamp * 1000).toLocaleString() : "-";
+        railwayOutput.textContent = JSON.stringify(data, null, 2);
+        markRefreshed();
+      };
+
+      const renderLogs = (data) => {
+        if (!data) return;
+        logsOutput.textContent = data.tail || "No log entries";
+        markRefreshed();
+      };
+
+      const markRefreshed = () => {
+        lastUpdatedEl.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
+      };
 
       async function refreshHealth() {
-        const res = await fetch(`/admin/api/health/deep${tokenParam}`);
-        const data = await res.json();
-        document.getElementById("health-output").textContent = JSON.stringify(data, null, 2);
+        try {
+          const data = await fetchJSON("/admin/api/health/deep");
+          renderHealth(data);
+        } catch (error) {
+          console.error(error);
+        }
       }
 
       async function refreshRailway() {
-        const res = await fetch(`/admin/api/health/railway${tokenParam}`);
-        const data = await res.json();
-        document.getElementById("railway-output").textContent = JSON.stringify(data, null, 2);
+        try {
+          const data = await fetchJSON("/admin/api/health/railway");
+          renderRailway(data);
+        } catch (error) {
+          console.error(error);
+        }
       }
 
       async function refreshMetrics() {
-        const res = await fetch(`/admin/api/metrics${tokenParam}`);
-        const data = await res.json();
-        document.getElementById("metrics-output").textContent = JSON.stringify(data, null, 2);
+        try {
+          const data = await fetchJSON("/admin/api/metrics");
+          renderMetrics(data);
+        } catch (error) {
+          console.error(error);
+        }
       }
 
       async function refreshLogs() {
-        const res = await fetch(`/admin/api/logs${tokenParam}`);
-        const data = await res.json();
-        document.getElementById("logs-output").textContent = data.tail || "No log entries";
+        try {
+          const data = await fetchJSON("/admin/api/logs");
+          renderLogs(data);
+        } catch (error) {
+          console.error(error);
+        }
       }
 
+      async function refreshEverything() {
+        await Promise.allSettled([
+          refreshHealth(),
+          refreshRailway(),
+          refreshMetrics(),
+          refreshLogs(),
+        ]);
+      }
+
+      autoRefreshToggle.addEventListener("change", () => {
+        if (autoRefreshToggle.checked) {
+          refreshEverything();
+        }
+      });
+
+      setInterval(() => {
+        if (autoRefreshToggle.checked) {
+          refreshEverything();
+        }
+      }, AUTO_REFRESH_MS);
+
+      const healthSeed = document.getElementById("initial-health");
+      const metricsSeed = document.getElementById("initial-metrics");
+      try {
+        if (healthSeed?.textContent) {
+          renderHealth(JSON.parse(healthSeed.textContent));
+        }
+        if (metricsSeed?.textContent) {
+          renderMetrics(JSON.parse(metricsSeed.textContent));
+        }
+      } catch (error) {
+        console.warn("Failed to hydrate dashboard", error);
+      }
+
+      refreshRailway();
       refreshLogs();
     </script>
   </body>
