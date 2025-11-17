@@ -2,51 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>MCP Admin Dashboard</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        --bg: #0d1017;
-        --panel: #161a23;
-        --border: #262b36;
-        --accent: #4f46e5;
-        --accent-soft: rgba(79, 70, 229, 0.15);
-        --text-dim: #9ca3af;
-        --ok: #22c55e;
-        --warn: #f59e0b;
-        --error: #ef4444;
-      }
-
-      body {
-        margin: 0;
-        padding: 2rem clamp(1rem, 4vw, 3rem);
-        background: var(--bg);
-        color: #f8fafc;
-      }
-
-      .hero {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 2rem;
-      }
-
-      .eyebrow {
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        color: var(--text-dim);
-        margin: 0 0 0.25rem;
-      }
-
       h1 {
         margin: 0;
         font-size: clamp(1.8rem, 4vw, 2.8rem);
       }
 
+      .subtitle {
+                      <textarea id="groq-system" placeholder="You are a concise assistant returning plain text." rows="3"></textarea>
+                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-system', 'You are a helpful infra copilot who answers with short actionable tips.')">Have AI generate a value for this field</button>
+                    </div>
+                    <div class="groq-field">
+                      <label>Max Completion Tokens</label>
+                      <input type="number" id="groq-max" min="1" max="8192" placeholder="512" value="512" />
+                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-max', '512')">Have AI generate a value for this field</button>
+                    </div>
+                    <div class="groq-field">
+                      <label>Temperature</label>
+                      <input type="number" id="groq-temperature" min="0" max="2" step="0.1" placeholder="0.2" value="0.2" />
+                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-temperature', '0.2')">Have AI generate a value for this field</button>
+                    </div>
+                    <div class="groq-field">
+                      <label>Top P</label>
+                      <input type="number" id="groq-top-p" min="0" max="1" step="0.05" placeholder="1" />
+                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-top-p', '1')">Have AI generate a value for this field</button>
+                    </div>
+                  </details>
+                  <button type="button" class="ghost" onclick="toggleGroqAdvanced()" id="groq-advanced-toggle">Hide additional options</button>
+                  <button class="primary" type="submit">Build request JSON</button>
+                </form>
+              </div>
+              <div>
+                <h3>Preview & curl helper</h3>
+                <p class="text-dim">Use the generated payload with any HTTP client. If bearer auth is enabled, attach <code>Authorization: Bearer &lt;secret&gt;</code>.</p>
+                <div class="groq-preview">
+                  <p><strong>JSON payload</strong></p>
+                  <pre id="groq-json">Fill the form to preview.</pre>
+                  <p><strong>curl command</strong></p>
+                  <pre id="groq-curl">curl -X POST http://localhost:8000/mcp/groq_chat \
+      -H "Content-Type: application/json" \
+      -d '{"prompt":"Hello"}'</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       .subtitle {
         margin-top: 0.5rem;
         color: var(--text-dim);
@@ -299,6 +298,112 @@
         margin-bottom: 1rem;
       }
 
+      .instruction-list {
+        counter-reset: step;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .instruction-list li::before {
+        counter-increment: step;
+        content: counter(step) ".";
+        font-weight: 700;
+        margin-right: 0.5rem;
+        color: var(--accent);
+      }
+
+      .instruction-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        line-height: 1.5;
+      }
+
+      .instruction-list code {
+        background: #0f131b;
+        padding: 0.15rem 0.35rem;
+        border-radius: 6px;
+        border: 1px solid #1c2232;
+      }
+
+      .instruction-content {
+        flex: 1;
+      }
+
+      .groq-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+        gap: 1.5rem;
+        align-items: start;
+      }
+
+      .groq-field {
+        margin-bottom: 1rem;
+      }
+
+      .groq-field label {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-weight: 500;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 6rem;
+        margin-top: 0.4rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #0f131b;
+        color: #fff;
+        resize: vertical;
+      }
+
+      .ghost {
+        background: transparent;
+        border-color: #303548;
+        color: #cbd5f5;
+      }
+
+      .ai-hint {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: var(--accent);
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+      }
+
+      .ai-hint:hover { color: #8c8ff9; }
+
+      .groq-preview {
+        margin-top: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+        background: #0f131b;
+      }
+
+      .required {
+        color: #f87171;
+        margin-left: 0.2rem;
+      }
+
+      .groq-body.collapsed {
+        display: none;
+      }
+
+      .text-dim {
+        color: var(--text-dim);
+      }
+
       @media (max-width: 640px) {
         .hero-status { width: 100%; }
         .panel-header { flex-direction: column; align-items: flex-start; }
@@ -455,6 +560,128 @@
       </details>
     </section>
 
+    <section class="panel" id="server-instructions">
+      <div class="panel-header">
+        <div>
+          <h2>Server instructions</h2>
+          <p class="subtitle">Everything you need to configure, run, and share this MCP-over-HTTP service.</p>
+        </div>
+      </div>
+      <ol class="instruction-list">
+        <li>
+          <div class="instruction-content">
+            <strong>Install dependencies.</strong>
+            <pre><code>pip install -r requirements.txt</code></pre>
+            <p class="text-dim">The project targets Python 3.12+. The command above brings in FastAPI, SlowAPI, httpx, Pillow, and other tool deps.</p>
+          </div>
+        </li>
+        <li>
+          <div class="instruction-content">
+            <strong>Copy secrets into <code>.env</code>.</strong>
+            <p class="text-dim">Duplicate <code>.env.example</code> → <code>.env</code> and fill the keys below:</p>
+            <ul>
+              <li><code>STABILITY_API_KEY</code> – required for every Stability tool (sd3.5, background edit, control suite).</li>
+              <li><code>GROQ_API_KEY</code> – unlocks the <code>groq_chat</code> MCP tool.</li>
+              <li><code>MCP_ADMIN_TOKEN</code> – protects this dashboard (plus optional query <code>?token=</code> sharing).</li>
+            </ul>
+          </div>
+        </li>
+        <li>
+          <div class="instruction-content">
+            <strong>Launch the server.</strong>
+            <pre><code>uvicorn mcp.server:app --host 0.0.0.0 --port 8000</code></pre>
+            <p class="text-dim">Override host/port through <code>mcp/config.yaml</code> or env overrides like <code>MCP_PORT</code>.</p>
+          </div>
+        </li>
+        <li>
+          <div class="instruction-content">
+            <strong>Call tools via HTTP.</strong>
+            <pre><code>curl -X POST http://localhost:8000/mcp/stability_sd35_generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"sunrise city","model":"sd3.5-large"}'</code></pre>
+            <p class="text-dim">Every MCP tool lives under <code>/mcp/&lt;tool_name&gt;</code> and returns JSON with <code>status</code>, <code>tool</code>, and the tool payload.</p>
+          </div>
+        </li>
+        <li>
+          <div class="instruction-content">
+            <strong>Secure + share.</strong>
+            <p class="text-dim">Flip <em>Allow anonymous</em> off to enforce bearer tokens, set a rate limit, then tunnel (ngrok, Cloudflare) or deploy via Docker/Railway.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel" id="groq-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Groq: Send Prompt</h2>
+          <p class="subtitle">Prep a payload for <code>/mcp/groq_chat</code> or let the AI buttons auto-fill defaults.</p>
+        </div>
+        <button type="button" class="ghost" onclick="toggleGroqPanel(this)">Close dialog</button>
+      </div>
+      <div id="groq-body" class="groq-body">
+        <div class="help-box">
+          <p><strong>Groq account <span class="required">*</span></strong></p>
+          <p><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Open account settings</a> to create or rotate <code>GROQ_API_KEY</code>.</p>
+        </div>
+        <div class="groq-grid">
+          <div>
+            <h3>Groq API Connection</h3>
+            <p class="text-dim">Set <code>GROQ_API_KEY</code> in <code>.env</code> (or hosting secrets). Once it exists, the <code>groq_chat</code> tool is available.</p>
+            <form id="groq-form" onsubmit="event.preventDefault(); previewGroqPayload();">
+              <div class="groq-field">
+                <label>Model<span class="required">*</span></label>
+                <input type="text" id="groq-model" placeholder="mixtral-8x7b-32768" value="mixtral-8x7b-32768" />
+                <button type="button" class="ai-hint" onclick="fillGroqSample('groq-model', 'mixtral-8x7b-32768')">Have AI select a value for this field</button>
+              </div>
+              <div class="groq-field">
+                <label>Prompt<span class="required">*</span></label>
+                <textarea id="groq-prompt" placeholder="Explain what's running in two sentences."></textarea>
+                <button type="button" class="ai-hint" onclick="fillGroqSample('groq-prompt', 'Summarize the MCP HTTP toolkit in three bullet points.')">Have AI generate a value for this field</button>
+              </div>
+              <details id="groq-advanced" open>
+                <summary>Additional options</summary>
+                <div class="groq-field">
+                  <label>System Prompt</label>
+                  <textarea id="groq-system" placeholder="You are a concise assistant returning plain text." rows="3"></textarea>
+                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-system', 'You are a helpful infra copilot who answers with short actionable tips.')">Have AI generate a value for this field</button>
+                </div>
+                <div class="groq-field">
+                  <label>Max Completion Tokens</label>
+                  <input type="number" id="groq-max" min="1" max="8192" placeholder="512" value="512" />
+                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-max', '512')">Have AI generate a value for this field</button>
+                </div>
+                <div class="groq-field">
+                  <label>Temperature</label>
+                  <input type="number" id="groq-temperature" min="0" max="2" step="0.1" placeholder="0.2" value="0.2" />
+                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-temperature', '0.2')">Have AI generate a value for this field</button>
+                </div>
+                <div class="groq-field">
+                  <label>Top P</label>
+                  <input type="number" id="groq-top-p" min="0" max="1" step="0.05" placeholder="1" />
+                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-top-p', '1')">Have AI generate a value for this field</button>
+                </div>
+              </details>
+              <button type="button" class="ghost" onclick="toggleGroqAdvanced()" id="groq-advanced-toggle">Hide additional options</button>
+              <button class="primary" type="submit">Build request JSON</button>
+            </form>
+          </div>
+          <div>
+            <h3>Preview & curl helper</h3>
+            <p class="text-dim">Use the generated payload with any HTTP client. If bearer auth is enabled, attach <code>Authorization: Bearer &lt;secret&gt;</code>.</p>
+            <div class="groq-preview">
+              <p><strong>JSON payload</strong></p>
+              <pre id="groq-json">Fill the form to preview.</pre>
+              <p><strong>curl command</strong></p>
+              <pre id="groq-curl">curl -X POST http://localhost:8000/mcp/groq_chat \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Hello"}'</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <div>
@@ -493,6 +720,12 @@
       const railwayStatus = document.getElementById("railway-status");
       const railwayHost = document.getElementById("railway-host");
       const railwayTime = document.getElementById("railway-time");
+      const groqBody = document.getElementById("groq-body");
+      const groqForm = document.getElementById("groq-form");
+      const groqAdvanced = document.getElementById("groq-advanced");
+      const groqAdvancedToggle = document.getElementById("groq-advanced-toggle");
+      const groqJson = document.getElementById("groq-json");
+      const groqCurl = document.getElementById("groq-curl");
 
       const statusClass = (status = "unknown") => {
         const normalized = status.toLowerCase();
@@ -615,6 +848,75 @@
         markRefreshed();
       };
 
+      function toggleGroqPanel(button) {
+        if (!groqBody) return;
+        groqBody.classList.toggle("collapsed");
+        const label = groqBody.classList.contains("collapsed") ? "Open dialog" : "Close dialog";
+        if (button) {
+          button.textContent = label;
+        }
+      }
+
+      function toggleGroqAdvanced() {
+        if (!groqAdvanced || !groqAdvancedToggle) return;
+        if (groqAdvanced.hasAttribute("open")) {
+          groqAdvanced.removeAttribute("open");
+          groqAdvancedToggle.textContent = "Show additional options";
+        } else {
+          groqAdvanced.setAttribute("open", "");
+          groqAdvancedToggle.textContent = "Hide additional options";
+        }
+      }
+
+      function fillGroqSample(fieldId, value) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+        field.value = value;
+        previewGroqPayload();
+      }
+
+      function previewGroqPayload() {
+        if (!groqJson || !groqCurl) return;
+        const model = document.getElementById("groq-model")?.value.trim();
+        const prompt = document.getElementById("groq-prompt")?.value.trim();
+        if (!model || !prompt) {
+          groqJson.textContent = "Fill model and prompt to preview.";
+          groqCurl.textContent = "curl -X POST http://localhost:8000/mcp/groq_chat ...";
+          return;
+        }
+
+        const payload = { model, prompt };
+        const systemPrompt = document.getElementById("groq-system")?.value.trim();
+        if (systemPrompt) payload.system_prompt = systemPrompt;
+
+        const maxRaw = document.getElementById("groq-max")?.value;
+        if (maxRaw) {
+          const parsed = parseInt(maxRaw, 10);
+          if (!Number.isNaN(parsed)) payload.max_completion_tokens = parsed;
+        }
+
+        const tempRaw = document.getElementById("groq-temperature")?.value;
+        if (tempRaw !== undefined && tempRaw !== "") {
+          const parsed = parseFloat(tempRaw);
+          if (!Number.isNaN(parsed)) payload.temperature = parsed;
+        }
+
+        const topPRaw = document.getElementById("groq-top-p")?.value;
+        if (topPRaw !== undefined && topPRaw !== "") {
+          const parsed = parseFloat(topPRaw);
+          if (!Number.isNaN(parsed)) payload.top_p = parsed;
+        }
+
+        groqJson.textContent = JSON.stringify(payload, null, 2);
+        const curlBody = JSON.stringify(payload).replace(/"/g, '\\"');
+        const curlCommand = [
+          "curl -X POST http://localhost:8000/mcp/groq_chat \\",
+          "  -H \"Content-Type: application/json\" \\",
+          `  -d "${curlBody}"`,
+        ].join("\n");
+        groqCurl.textContent = curlCommand;
+      }
+
       const markRefreshed = () => {
         lastUpdatedEl.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
       };
@@ -688,6 +990,14 @@
       } catch (error) {
         console.warn("Failed to hydrate dashboard", error);
       }
+
+      if (groqForm) {
+        groqForm.addEventListener("input", () => previewGroqPayload());
+      }
+      if (groqAdvanced && groqAdvancedToggle && !groqAdvanced.hasAttribute("open")) {
+        groqAdvancedToggle.textContent = "Show additional options";
+      }
+      previewGroqPayload();
 
       refreshRailway();
       refreshLogs();
