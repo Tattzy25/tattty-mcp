@@ -2,60 +2,61 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-      h1 {
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Control Studio</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #020202;
+        --card: #2a2a2a;
+        --panel: #141414;
+        --border: #2f2f2f;
+        --accent: #00c2ff;
+        --text-dim: #a1a1a1;
+        --card-text: #f8f8f8;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
         margin: 0;
-        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        min-height: 100vh;
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: #fff;
       }
 
-      .subtitle {
-                      <textarea id="groq-system" placeholder="You are a concise assistant returning plain text." rows="3"></textarea>
-                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-system', 'You are a helpful infra copilot who answers with short actionable tips.')">Have AI generate a value for this field</button>
-                    </div>
-                    <div class="groq-field">
-                      <label>Max Completion Tokens</label>
-                      <input type="number" id="groq-max" min="1" max="8192" placeholder="512" value="512" />
-                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-max', '512')">Have AI generate a value for this field</button>
-                    </div>
-                    <div class="groq-field">
-                      <label>Temperature</label>
-                      <input type="number" id="groq-temperature" min="0" max="2" step="0.1" placeholder="0.2" value="0.2" />
-                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-temperature', '0.2')">Have AI generate a value for this field</button>
-                    </div>
-                    <div class="groq-field">
-                      <label>Top P</label>
-                      <input type="number" id="groq-top-p" min="0" max="1" step="0.05" placeholder="1" />
-                      <button type="button" class="ai-hint" onclick="fillGroqSample('groq-top-p', '1')">Have AI generate a value for this field</button>
-                    </div>
-                  </details>
-                  <button type="button" class="ghost" onclick="toggleGroqAdvanced()" id="groq-advanced-toggle">Hide additional options</button>
-                  <button class="primary" type="submit">Build request JSON</button>
-                </form>
-              </div>
-              <div>
-                <h3>Preview & curl helper</h3>
-                <p class="text-dim">Use the generated payload with any HTTP client. If bearer auth is enabled, attach <code>Authorization: Bearer &lt;secret&gt;</code>.</p>
-                <div class="groq-preview">
-                  <p><strong>JSON payload</strong></p>
-                  <pre id="groq-json">Fill the form to preview.</pre>
-                  <p><strong>curl command</strong></p>
-                  <pre id="groq-curl">curl -X POST http://localhost:8000/mcp/groq_chat \
-      -H "Content-Type: application/json" \
-      -d '{"prompt":"Hello"}'</pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      .subtitle {
-        margin-top: 0.5rem;
-        color: var(--text-dim);
-        max-width: 38rem;
-      }
+      a { color: var(--accent); }
 
-      .hero-status {
+      .app {
+        padding: clamp(1rem, 4vw, 2.5rem);
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 2rem;
+      }
+
+      header.hero {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 1.5rem;
+      }
+
+      .hero h1 {
+        margin: 0 0 0.4rem;
+        font-size: clamp(2rem, 5vw, 3.2rem);
+      }
+
+      .hero .subtitle {
+        margin: 0;
+        max-width: 38rem;
+        color: var(--text-dim);
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
         min-width: 16rem;
         background: var(--panel);
         border: 1px solid var(--border);
@@ -63,637 +64,553 @@
         padding: 1.25rem;
       }
 
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.4rem 0.9rem;
-        border-radius: 999px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
+      button, input, textarea, select {
+        font: inherit;
       }
 
-      .status-pill.ok {
-        background: rgba(34, 197, 94, 0.15);
-        color: var(--ok);
-      }
-
-      .status-pill.error {
-        background: rgba(239, 68, 68, 0.15);
-        color: var(--error);
-      }
-
-      .refresh-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        font-size: 0.9rem;
-        color: var(--text-dim);
-      }
-
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-      }
-
-      .primary {
-        padding: 0.6rem 1.1rem;
+      .btn {
         border: none;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--accent), #6366f1);
-        color: #fff;
-        font-weight: 600;
+        border-radius: 999px;
+        padding: 0.7rem 1.4rem;
         cursor: pointer;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
-      .cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
+      .btn-accent {
+        background: linear-gradient(135deg, var(--accent), #6a5af9);
+        color: #000;
       }
 
-      .card {
-        background: var(--panel);
+      .btn-ghost {
+        background: transparent;
         border: 1px solid var(--border);
+        color: #fff;
+      }
+
+      .card-deck {
+        display: grid;
+        grid-template-columns: repeat(var(--card-columns, 4), minmax(220px, 1fr));
+        gap: 1.25rem;
+        transition: grid-template-columns 0.2s ease;
+      }
+
+      .stat-card {
+        background: var(--card);
         border-radius: 16px;
         padding: 1.25rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        cursor: grab;
+        user-select: none;
+        position: relative;
       }
 
-      .card h3 {
-        margin: 0;
-        color: var(--text-dim);
+      .stat-card[data-span="2"] { grid-column: span 2; }
+      .stat-card[data-span="3"] { grid-column: span 3; }
+
+      .stat-card.dragging { opacity: 0.35; }
+
+      .stat-card header {
         font-size: 0.9rem;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
+        color: var(--text-dim);
       }
 
-      .card .value {
-        margin: 0.4rem 0 0.2rem;
-        font-size: 1.8rem;
-        font-weight: 600;
+      .stat-card .value {
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        margin: 0.15rem 0;
+        color: var(--card-text);
+        font-weight: 700;
       }
 
-      .card .hint {
+      .stat-card .hint {
         margin: 0;
         color: var(--text-dim);
+      }
+
+      .panel-grid {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       }
 
       .panel {
         background: var(--panel);
-        border: 1px solid var(--border);
         border-radius: 18px;
+        border: 1px solid var(--border);
         padding: 1.5rem;
-        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        cursor: grab;
       }
+
+      .panel.dragging { opacity: 0.3; }
 
       .panel-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
         gap: 1rem;
-        margin-bottom: 1rem;
+        flex-wrap: wrap;
       }
 
       .panel-header h2 {
         margin: 0;
+        font-size: 1.3rem;
       }
 
-      .panel-actions {
-        display: flex;
-        gap: 0.6rem;
-        flex-wrap: wrap;
-      }
-
-      .panel button {
-        padding: 0.45rem 0.9rem;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #1e2330;
-        color: #fff;
-        cursor: pointer;
-      }
-
-      form label {
-        display: block;
-        margin-bottom: 0.85rem;
-        font-weight: 500;
-      }
-
-      input[type="text"], input[type="number"] {
-        width: 100%;
-        margin-top: 0.4rem;
-        padding: 0.6rem 0.75rem;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #0f131b;
-        color: #fff;
-      }
-
-      input[type="checkbox"] {
-        transform: scale(1.2);
-        margin-right: 0.5rem;
-      }
-
-      pre {
-        overflow-x: auto;
-        background: #0f131b;
-        border-radius: 12px;
-        padding: 1rem;
-        border: 1px solid #1f2532;
-        font-size: 0.85rem;
-      }
-
-      details summary {
-        cursor: pointer;
-        margin-bottom: 0.7rem;
+      .panel-header p {
+        margin: 0;
         color: var(--text-dim);
       }
 
-      ul.status-list {
+      .panel button {
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #1d1d1d;
+        color: #fff;
+        padding: 0.45rem 0.9rem;
+        cursor: pointer;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      th, td {
+        padding: 0.75rem 0.6rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+      }
+
+      tr:last-child td { border-bottom: none; }
+
+      pre {
+        background: #0a0a0a;
+        border-radius: 12px;
+        border: 1px solid #222;
+        padding: 1rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+      }
+
+      details summary { cursor: pointer; color: var(--text-dim); }
+
+      .list-vertical {
         list-style: none;
         padding: 0;
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.8rem;
       }
 
-      ul.status-list li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.6rem 0.75rem;
-        border-radius: 10px;
-        background: #101523;
-        border: 1px solid #1c2232;
-      }
-
-      .pill {
-        padding: 0.15rem 0.6rem;
+      .status-pill {
+        padding: 0.2rem 0.8rem;
         border-radius: 999px;
         font-size: 0.75rem;
         font-weight: 600;
       }
 
-      .pill.ok { background: rgba(34, 197, 94, 0.15); color: var(--ok); }
-      .pill.warning { background: rgba(245, 158, 11, 0.15); color: var(--warn); }
-      .pill.error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
-      .pill.unknown { background: rgba(148, 163, 184, 0.15); color: #cbd5f5; }
+      .status-pill.ok { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+      .status-pill.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+      .status-pill.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+      .status-pill.unknown { background: rgba(156, 163, 175, 0.2); color: #e5e7eb; }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th, td {
-        padding: 0.5rem 0.3rem;
-        text-align: left;
-        border-bottom: 1px solid #1f2532;
-      }
-
-      th {
-        color: var(--text-dim);
-        font-weight: 500;
-      }
-
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      .grid-two {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-        gap: 1.5rem;
-      }
-
-      .recent-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
+      .settings-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: min(480px, 90vw);
+        background: #070707;
+        border-left: 1px solid var(--border);
+        box-shadow: -12px 0 30px rgba(0, 0, 0, 0.6);
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 1rem;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        z-index: 20;
       }
 
-      .recent-item {
+      .settings-panel.open { transform: translateX(0); }
+
+      .settings-panel h3 {
+        margin: 0 0 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+      }
+
+      .setting-group {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        background: #0f0f0f;
         display: flex;
-        justify-content: space-between;
-        gap: 1rem;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      label.setting-label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
         font-size: 0.9rem;
       }
 
-      .recent-item span {
-        color: var(--text-dim);
-      }
-
-      .help-box {
-        background: #101523;
-        border: 1px dashed var(--border);
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-      }
-
-      .instruction-list {
-        counter-reset: step;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .instruction-list li::before {
-        counter-increment: step;
-        content: counter(step) ".";
-        font-weight: 700;
-        margin-right: 0.5rem;
-        color: var(--accent);
-      }
-
-      .instruction-list li {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-        line-height: 1.5;
-      }
-
-      .instruction-list code {
-        background: #0f131b;
-        padding: 0.15rem 0.35rem;
-        border-radius: 6px;
-        border: 1px solid #1c2232;
-      }
-
-      .instruction-content {
-        flex: 1;
-      }
-
-      .groq-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-        gap: 1.5rem;
-        align-items: start;
-      }
-
-      .groq-field {
-        margin-bottom: 1rem;
-      }
-
-      .groq-field label {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-        font-weight: 500;
-      }
-
-      textarea {
+      input[type="color"], input[type="range"], input[type="text"], textarea, select, input[type="number"] {
         width: 100%;
-        min-height: 6rem;
-        margin-top: 0.4rem;
-        padding: 0.6rem 0.75rem;
+        padding: 0.5rem 0.6rem;
         border-radius: 10px;
         border: 1px solid var(--border);
-        background: #0f131b;
+        background: #1d1d1d;
         color: #fff;
-        resize: vertical;
       }
 
-      .ghost {
-        background: transparent;
-        border-color: #303548;
-        color: #cbd5f5;
+      input[type="color"] { height: 2.5rem; padding: 0; border-radius: 12px; }
+
+      textarea { resize: vertical; min-height: 4rem; }
+
+      .settings-panel form button {
+        align-self: flex-start;
       }
 
-      .ai-hint {
-        margin-top: 0.35rem;
-        font-size: 0.8rem;
-        color: var(--accent);
-        background: none;
+      .settings-panel .close-btn {
+        align-self: flex-end;
         border: none;
-        cursor: pointer;
-        text-decoration: underline;
-        padding: 0;
-      }
-
-      .ai-hint:hover { color: #8c8ff9; }
-
-      .groq-preview {
-        margin-top: 1rem;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 1rem;
-        background: #0f131b;
-      }
-
-      .required {
-        color: #f87171;
-        margin-left: 0.2rem;
-      }
-
-      .groq-body.collapsed {
-        display: none;
-      }
-
-      .text-dim {
+        background: transparent;
         color: var(--text-dim);
+        font-size: 1.1rem;
+        cursor: pointer;
       }
 
-      @media (max-width: 640px) {
-        .hero-status { width: 100%; }
-        .panel-header { flex-direction: column; align-items: flex-start; }
+      .empty-state {
+        color: var(--text-dim);
+        font-style: italic;
+      }
+
+      @media (max-width: 720px) {
+        .panel-grid { grid-template-columns: 1fr; }
+        .stat-card[data-span] { grid-column: span 1 !important; }
       }
     </style>
   </head>
   <body>
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Streamable MCP Toolkit</p>
-        <h1>Control Panel</h1>
-        <p class="subtitle">Flip auth switches, run health checks, and watch traffic without memorising curl commands.</p>
-      </div>
-      <div class="hero-status">
-        <div id="status-pill" class="status-pill {{ 'ok' if deep_status == 'ok' else 'error' }}">{{ deep_status | upper }}</div>
-        <div class="refresh-controls">
-          <label class="toggle"><input type="checkbox" id="auto-refresh" checked /> Auto-refresh every 15s</label>
-          <small id="last-updated">Last refresh: just now</small>
-        </div>
-        <button class="primary" type="button" onclick="refreshEverything()">Refresh now</button>
-      </div>
-    </header>
-
-    <section class="cards">
-      <article class="card">
-        <h3>Uptime</h3>
-        <p class="value" id="uptime-value">{{ metrics['uptime_seconds'] }}s</p>
-        <p class="hint">Since last restart</p>
-      </article>
-      <article class="card">
-        <h3>Total Requests</h3>
-        <p class="value" id="requests-value">{{ metrics['total_requests'] }}</p>
-        <p class="hint">All tool calls counted</p>
-      </article>
-      <article class="card">
-        <h3>Error Count</h3>
-        <p class="value" id="errors-value">{{ metrics['total_errors'] }}</p>
-        <p class="hint">5xx responses only</p>
-      </article>
-      <article class="card">
-        <h3>Rate Limit</h3>
-        <p class="value" id="rate-limit-value">{{ settings.rate_limit_per_ip or 'Off' }}</p>
-        <p class="hint">Requests/minute per IP</p>
-      </article>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
+    <div class="app">
+      <header class="hero">
         <div>
-          <h2>Health Checks</h2>
-          <p class="subtitle">Buttons run the same endpoints Railway pings (/health/deep & /health/railway).</p>
+          <p class="subtitle">Streamable MCP toolkit</p>
+          <h1>Control Studio</h1>
+          <p class="subtitle">Drag, recolor, or spawn new stats. Every panel remains wired to live MCP endpoints.</p>
         </div>
-        <div class="panel-actions">
-          <button type="button" onclick="refreshHealth()">Deep health</button>
-          <button type="button" onclick="refreshRailway()">Railway snapshot</button>
-        </div>
-      </div>
-      <div class="grid-two">
-        <div>
-          <h3>Core systems</h3>
-          <ul id="health-list" class="status-list"></ul>
-        </div>
-        <div>
-          <h3>Tool diagnostics</h3>
-          <ul id="tool-list" class="status-list"></ul>
-        </div>
-      </div>
-      <details>
-        <summary>Raw deep health JSON</summary>
-        <pre id="health-output">{{ deep_json | safe }}</pre>
-      </details>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Railway deploy view</h2>
-          <p class="subtitle">What Railway sees during rollout.</p>
-        </div>
-      </div>
-      <div class="grid-two">
-        <div class="help-box">
-          <p><strong>Status:</strong> <span id="railway-status">-</span></p>
-          <p><strong>Hostname:</strong> <span id="railway-host">-</span></p>
-          <p><strong>Checked at:</strong> <span id="railway-time">-</span></p>
-        </div>
-        <div>
-          <p>Tip: point Railway's health check to <code>/health/railway</code>. The endpoint wraps deep checks plus metrics in one payload.</p>
-        </div>
-      </div>
-      <details>
-        <summary>Raw Railway JSON</summary>
-        <pre id="railway-output">Call "Railway snapshot" to populate.</pre>
-      </details>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Runtime settings</h2>
-          <p class="subtitle">Toggles below edit in-memory settings instantly.</p>
-        </div>
-      </div>
-      <div class="help-box">
-        <p><strong>Anonymous access:</strong> {{ 'Enabled' if settings.allow_anonymous else 'Disabled (Bearer token required)' }}</p>
-        <p><strong>Admin token:</strong> {{ 'Configured' if settings.admin_token else 'Not set (panel open to anyone)' }}</p>
-      </div>
-      <form method="post" action="/admin/settings">
-        <input type="hidden" name="token" value="{{ token_hint }}" />
-        <label>
-          <input type="checkbox" name="allow_anonymous" {% if settings.allow_anonymous %}checked{% endif %} />
-          Allow anonymous requests (unchecked requires <code>Authorization: Bearer &lt;secret&gt;</code>)
-        </label>
-        <label>
-          Rate limit per IP (requests/minute; leave blank to disable)
-          <input type="number" name="rate_limit_per_ip" min="0" value="{{ settings.rate_limit_per_ip or '' }}" />
-        </label>
-        <label>
-          Secret key (stored in memory only)
-          <input type="text" name="secret_key" value="{{ settings.secret_key or '' }}" placeholder="Paste new key here" />
-        </label>
-        <button class="primary" type="submit">Save settings</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Live metrics</h2>
-          <p class="subtitle">Per-path counters and the last 10 requests.</p>
-        </div>
-        <div class="panel-actions">
-          <button type="button" onclick="refreshMetrics()">Refresh metrics</button>
-        </div>
-      </div>
-      <div class="grid-two">
-        <div>
-          <h3>Per-path traffic</h3>
-          <table>
-            <thead>
-              <tr><th>Path</th><th>Hits</th></tr>
-            </thead>
-            <tbody id="path-table-body"></tbody>
-          </table>
-        </div>
-        <div>
-          <h3>Recent requests</h3>
-          <ul id="recent-requests" class="recent-list"></ul>
-        </div>
-      </div>
-      <details>
-        <summary>Raw metrics JSON</summary>
-        <pre id="metrics-output">{{ metrics_json | safe }}</pre>
-      </details>
-    </section>
-
-    <section class="panel" id="server-instructions">
-      <div class="panel-header">
-        <div>
-          <h2>Server instructions</h2>
-          <p class="subtitle">Everything you need to configure, run, and share this MCP-over-HTTP service.</p>
-        </div>
-      </div>
-      <ol class="instruction-list">
-        <li>
-          <div class="instruction-content">
-            <strong>Install dependencies.</strong>
-            <pre><code>pip install -r requirements.txt</code></pre>
-            <p class="text-dim">The project targets Python 3.12+. The command above brings in FastAPI, SlowAPI, httpx, Pillow, and other tool deps.</p>
+        <div class="hero-actions">
+          <div>
+            <p class="subtitle">Overall status</p>
+            <div id="status-pill" class="status-pill {{ 'ok' if deep_status == 'ok' else 'error' }}">
+              {{ deep_status | upper }}
+            </div>
           </div>
-        </li>
-        <li>
-          <div class="instruction-content">
-            <strong>Copy secrets into <code>.env</code>.</strong>
-            <p class="text-dim">Duplicate <code>.env.example</code> → <code>.env</code> and fill the keys below:</p>
-            <ul>
-              <li><code>STABILITY_API_KEY</code> – required for every Stability tool (sd3.5, background edit, control suite).</li>
-              <li><code>GROQ_API_KEY</code> – unlocks the <code>groq_chat</code> MCP tool.</li>
-              <li><code>MCP_ADMIN_TOKEN</code> – protects this dashboard (plus optional query <code>?token=</code> sharing).</li>
-            </ul>
+          <button class="btn btn-accent" type="button" onclick="refreshEverything()">Refresh Now</button>
+          <button class="btn btn-ghost" type="button" onclick="toggleSettings(true)">Open Settings</button>
+          <label class="subtitle" style="display:flex;align-items:center;gap:0.5rem;">
+            <input type="checkbox" id="auto-refresh" checked /> Auto-refresh every 15s
+          </label>
+          <small id="last-updated" class="subtitle">Last refresh: just now</small>
+        </div>
+      </header>
+
+      <section class="card-deck" id="card-deck" style="--card-columns:3">
+        <article class="stat-card" draggable="true" data-card-id="uptime" data-span="1">
+          <header>Uptime</header>
+          <p class="value" id="uptime-value">{{ metrics['uptime_seconds'] }}s</p>
+          <p class="hint">Since last restart</p>
+        </article>
+        <article class="stat-card" draggable="true" data-card-id="requests" data-span="1">
+          <header>Total Requests</header>
+          <p class="value" id="requests-value">{{ metrics['total_requests'] }}</p>
+          <p class="hint">All tool calls counted</p>
+        </article>
+        <article class="stat-card" draggable="true" data-card-id="errors" data-span="1">
+          <header>Error Count</header>
+          <p class="value" id="errors-value">{{ metrics['total_errors'] }}</p>
+          <p class="hint">5xx responses only</p>
+        </article>
+        <article class="stat-card" draggable="true" data-card-id="rate" data-span="1">
+          <header>Rate Limit</header>
+          <p class="value" id="rate-limit-value">{{ settings.rate_limit_per_ip or 'Off' }}</p>
+          <p class="hint">Requests/minute per IP</p>
+        </article>
+      </section>
+
+      <section class="panel-grid" id="panel-grid">
+        <article class="panel" draggable="true" data-panel-id="health">
+          <div class="panel-header">
+            <div>
+              <h2>Health Checks</h2>
+              <p>Mirror of /health/deep and /health/railway</p>
+            </div>
+            <div>
+              <button type="button" onclick="refreshHealth()">Deep health</button>
+              <button type="button" onclick="refreshRailway()">Railway snapshot</button>
+            </div>
           </div>
-        </li>
-        <li>
-          <div class="instruction-content">
-            <strong>Launch the server.</strong>
-            <pre><code>uvicorn mcp.server:app --host 0.0.0.0 --port 8000</code></pre>
-            <p class="text-dim">Override host/port through <code>mcp/config.yaml</code> or env overrides like <code>MCP_PORT</code>.</p>
+          <div class="panel-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px,1fr));">
+            <div>
+              <h3>Core systems</h3>
+              <ul id="health-list" class="list-vertical"></ul>
+            </div>
+            <div>
+              <h3>Tools</h3>
+              <ul id="tool-list" class="list-vertical"></ul>
+            </div>
           </div>
-        </li>
-        <li>
-          <div class="instruction-content">
-            <strong>Call tools via HTTP.</strong>
-            <pre><code>curl -X POST http://localhost:8000/mcp/stability_sd35_generate \
+          <details>
+            <summary>Raw deep health JSON</summary>
+            <pre id="health-output">{{ deep_json | safe }}</pre>
+          </details>
+        </article>
+
+        <article class="panel" draggable="true" data-panel-id="railway">
+          <div class="panel-header">
+            <div>
+              <h2>Railway Deploy View</h2>
+              <p>Status as seen by Railway's probes.</p>
+            </div>
+          </div>
+          <div class="panel-grid" style="grid-template-columns: repeat(auto-fit,minmax(200px,1fr));">
+            <div>
+              <p><strong>Status:</strong> <span id="railway-status">-</span></p>
+              <p><strong>Hostname:</strong> <span id="railway-host">-</span></p>
+              <p><strong>Checked at:</strong> <span id="railway-time">-</span></p>
+            </div>
+            <div>
+              <p>Tip: point Railway's check to <code>/health/railway</code> for deep + metrics coverage.</p>
+            </div>
+          </div>
+          <details>
+            <summary>Raw Railway JSON</summary>
+            <pre id="railway-output">Call "Railway snapshot" to populate.</pre>
+          </details>
+        </article>
+
+        <article class="panel" draggable="true" data-panel-id="metrics">
+          <div class="panel-header">
+            <div>
+              <h2>Live Metrics</h2>
+              <p>Per-path counters & last requests.</p>
+            </div>
+            <button type="button" onclick="refreshMetrics()">Refresh metrics</button>
+          </div>
+          <div class="panel-grid" style="grid-template-columns: repeat(auto-fit,minmax(260px,1fr));">
+            <div>
+              <h3>Per-path traffic</h3>
+              <table>
+                <thead><tr><th>Path</th><th>Hits</th></tr></thead>
+                <tbody id="path-table-body"></tbody>
+              </table>
+            </div>
+            <div>
+              <h3>Recent Requests</h3>
+              <ul id="recent-requests" class="list-vertical"></ul>
+            </div>
+          </div>
+          <details>
+            <summary>Raw metrics JSON</summary>
+            <pre id="metrics-output">{{ metrics_json | safe }}</pre>
+          </details>
+        </article>
+
+        <article class="panel" draggable="true" data-panel-id="runtime">
+          <div class="panel-header">
+            <div>
+              <h2>Runtime Settings</h2>
+              <p>Toggles edit memory-only configuration.</p>
+            </div>
+          </div>
+          <div>
+            <p><strong>Anonymous access:</strong> {{ 'Enabled' if settings.allow_anonymous else 'Disabled (Bearer token required)' }}</p>
+            <p><strong>Admin token:</strong> {{ 'Configured' if settings.admin_token else 'Not set' }}</p>
+          </div>
+          <form method="post" action="/admin/settings" onsubmit="return confirm('Apply new runtime settings?');">
+            <input type="hidden" name="token" value="{{ token_hint }}" />
+            <label>Allow anonymous requests
+              <input type="checkbox" name="allow_anonymous" {% if settings.allow_anonymous %}checked{% endif %} />
+            </label>
+            <label>Rate limit per IP
+              <input type="number" name="rate_limit_per_ip" min="0" value="{{ settings.rate_limit_per_ip or '' }}" />
+            </label>
+            <label>Secret key
+              <input type="text" name="secret_key" value="{{ settings.secret_key or '' }}" placeholder="Paste new key" />
+            </label>
+            <button class="btn btn-accent" type="submit">Save settings</button>
+          </form>
+        </article>
+
+        <article class="panel" draggable="true" data-panel-id="instructions">
+          <div class="panel-header">
+            <div>
+              <h2>Server Instructions</h2>
+              <p>End-to-end setup walkthrough.</p>
+            </div>
+          </div>
+          <ol style="margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:0.9rem;">
+            <li>
+              <strong>Install dependencies:</strong>
+              <pre><code>pip install -r requirements.txt</code></pre>
+            </li>
+            <li>
+              <strong>Configure secrets:</strong>
+              <p>Copy <code>.env.example</code> → <code>.env</code> and fill <code>STABILITY_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>MCP_ADMIN_TOKEN</code>.</p>
+            </li>
+            <li>
+              <strong>Launch server:</strong>
+              <pre><code>uvicorn mcp.server:app --host 0.0.0.0 --port 8000</code></pre>
+            </li>
+            <li>
+              <strong>Test a tool:</strong>
+              <pre><code>curl -X POST http://localhost:8000/mcp/stability_sd35_generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"sunrise city","model":"sd3.5-large"}'</code></pre>
-            <p class="text-dim">Every MCP tool lives under <code>/mcp/&lt;tool_name&gt;</code> and returns JSON with <code>status</code>, <code>tool</code>, and the tool payload.</p>
-          </div>
-        </li>
-        <li>
-          <div class="instruction-content">
-            <strong>Secure + share.</strong>
-            <p class="text-dim">Flip <em>Allow anonymous</em> off to enforce bearer tokens, set a rate limit, then tunnel (ngrok, Cloudflare) or deploy via Docker/Railway.</p>
-          </div>
-        </li>
-      </ol>
-    </section>
+            </li>
+            <li>
+              <strong>Secure + share:</strong>
+              <p>Disable anonymous mode, set rate limits, tunnel via ngrok/Cloudflare, or deploy to Railway.</p>
+            </li>
+          </ol>
+        </article>
 
-    <section class="panel" id="groq-panel">
-      <div class="panel-header">
-        <div>
-          <h2>Groq: Send Prompt</h2>
-          <p class="subtitle">Prep a payload for <code>/mcp/groq_chat</code> or let the AI buttons auto-fill defaults.</p>
-        </div>
-        <button type="button" class="ghost" onclick="toggleGroqPanel(this)">Close dialog</button>
-      </div>
-      <div id="groq-body" class="groq-body">
-        <div class="help-box">
-          <p><strong>Groq account <span class="required">*</span></strong></p>
-          <p><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Open account settings</a> to create or rotate <code>GROQ_API_KEY</code>.</p>
-        </div>
-        <div class="groq-grid">
-          <div>
-            <h3>Groq API Connection</h3>
-            <p class="text-dim">Set <code>GROQ_API_KEY</code> in <code>.env</code> (or hosting secrets). Once it exists, the <code>groq_chat</code> tool is available.</p>
+        <article class="panel" draggable="true" data-panel-id="groq">
+          <div class="panel-header">
+            <div>
+              <h2>Groq: Send Prompt</h2>
+              <p>Prep payloads for <code>/mcp/groq_chat</code>.</p>
+            </div>
+          </div>
+          <div class="panel-grid" style="grid-template-columns: repeat(auto-fit,minmax(240px,1fr));">
             <form id="groq-form" onsubmit="event.preventDefault(); previewGroqPayload();">
-              <div class="groq-field">
-                <label>Model<span class="required">*</span></label>
-                <input type="text" id="groq-model" placeholder="mixtral-8x7b-32768" value="mixtral-8x7b-32768" />
-                <button type="button" class="ai-hint" onclick="fillGroqSample('groq-model', 'mixtral-8x7b-32768')">Have AI select a value for this field</button>
-              </div>
-              <div class="groq-field">
-                <label>Prompt<span class="required">*</span></label>
+              <label class="setting-label">Model*
+                <input type="text" id="groq-model" value="mixtral-8x7b-32768" />
+              </label>
+              <label class="setting-label">Prompt*
                 <textarea id="groq-prompt" placeholder="Explain what's running in two sentences."></textarea>
-                <button type="button" class="ai-hint" onclick="fillGroqSample('groq-prompt', 'Summarize the MCP HTTP toolkit in three bullet points.')">Have AI generate a value for this field</button>
-              </div>
+              </label>
               <details id="groq-advanced" open>
                 <summary>Additional options</summary>
-                <div class="groq-field">
-                  <label>System Prompt</label>
-                  <textarea id="groq-system" placeholder="You are a concise assistant returning plain text." rows="3"></textarea>
-                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-system', 'You are a helpful infra copilot who answers with short actionable tips.')">Have AI generate a value for this field</button>
-                </div>
-                <div class="groq-field">
-                  <label>Max Completion Tokens</label>
-                  <input type="number" id="groq-max" min="1" max="8192" placeholder="512" value="512" />
-                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-max', '512')">Have AI generate a value for this field</button>
-                </div>
-                <div class="groq-field">
-                  <label>Temperature</label>
-                  <input type="number" id="groq-temperature" min="0" max="2" step="0.1" placeholder="0.2" value="0.2" />
-                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-temperature', '0.2')">Have AI generate a value for this field</button>
-                </div>
-                <div class="groq-field">
-                  <label>Top P</label>
-                  <input type="number" id="groq-top-p" min="0" max="1" step="0.05" placeholder="1" />
-                  <button type="button" class="ai-hint" onclick="fillGroqSample('groq-top-p', '1')">Have AI generate a value for this field</button>
-                </div>
+                <label class="setting-label">System prompt
+                  <textarea id="groq-system" placeholder="You are a concise assistant returning plain text."></textarea>
+                </label>
+                <label class="setting-label">Max completion tokens
+                  <input type="number" id="groq-max" min="1" max="8192" value="512" />
+                </label>
+                <label class="setting-label">Temperature
+                  <input type="number" id="groq-temperature" min="0" max="2" step="0.1" value="0.2" />
+                </label>
+                <label class="setting-label">Top P
+                  <input type="number" id="groq-top-p" min="0" max="1" step="0.05" value="1" />
+                </label>
               </details>
-              <button type="button" class="ghost" onclick="toggleGroqAdvanced()" id="groq-advanced-toggle">Hide additional options</button>
-              <button class="primary" type="submit">Build request JSON</button>
+              <button class="btn btn-accent" type="submit">Build request JSON</button>
             </form>
-          </div>
-          <div>
-            <h3>Preview & curl helper</h3>
-            <p class="text-dim">Use the generated payload with any HTTP client. If bearer auth is enabled, attach <code>Authorization: Bearer &lt;secret&gt;</code>.</p>
-            <div class="groq-preview">
-              <p><strong>JSON payload</strong></p>
+            <div>
+              <h3>Preview</h3>
               <pre id="groq-json">Fill the form to preview.</pre>
-              <p><strong>curl command</strong></p>
+              <h3>curl helper</h3>
               <pre id="groq-curl">curl -X POST http://localhost:8000/mcp/groq_chat \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Hello"}'</pre>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </article>
 
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Log tail</h2>
-          <p class="subtitle">Shows the latest structured log file entries.</p>
-        </div>
-        <div class="panel-actions">
-          <button type="button" onclick="refreshLogs()">Fetch logs</button>
-        </div>
+        <article class="panel" draggable="true" data-panel-id="logs">
+          <div class="panel-header">
+            <div>
+              <h2>Log Tail</h2>
+              <p>Last structured entries</p>
+            </div>
+            <button type="button" onclick="refreshLogs()">Fetch logs</button>
+          </div>
+          <pre id="logs-output">Loading...</pre>
+        </article>
+      </section>
+    </div>
+
+    <aside id="settings-panel" class="settings-panel" aria-label="Customization panel">
+      <button class="close-btn" type="button" onclick="toggleSettings(false)">✕</button>
+      <h2>Settings Menu</h2>
+      <div class="setting-group">
+        <h3>Theme</h3>
+        <label class="setting-label">Background color
+          <input type="color" id="color-bg" value="#020202" />
+        </label>
+        <label class="setting-label">Card color
+          <input type="color" id="color-card" value="#2a2a2a" />
+        </label>
+        <label class="setting-label">Accent color
+          <input type="color" id="color-accent" value="#00c2ff" />
+        </label>
+        <label class="setting-label">Card text color
+          <input type="color" id="color-card-text" value="#f8f8f8" />
+        </label>
       </div>
-      <pre id="logs-output">Loading...</pre>
-    </section>
+
+      <div class="setting-group">
+        <h3>Layout</h3>
+        <label class="setting-label">Card columns <span id="column-label">3 columns</span>
+          <input type="range" id="column-range" min="1" max="4" value="3" />
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <h3>Card Designer</h3>
+        <label class="setting-label">Select card
+          <select id="card-select"></select>
+        </label>
+        <label class="setting-label">Card accent
+          <input type="color" id="card-color-picker" value="#2a2a2a" />
+        </label>
+        <label class="setting-label">Width (columns)
+          <input type="range" id="card-span" min="1" max="3" value="1" />
+        </label>
+        <button class="btn btn-ghost" type="button" onclick="removeSelectedCard()">Remove selected card</button>
+      </div>
+
+      <form class="setting-group" id="new-card-form">
+        <h3>New card</h3>
+        <label class="setting-label">Title
+          <input type="text" name="title" required placeholder="Latency" />
+        </label>
+        <label class="setting-label">Value
+          <input type="text" name="value" required placeholder="42 ms" />
+        </label>
+        <label class="setting-label">Hint
+          <input type="text" name="hint" placeholder="Average response" />
+        </label>
+        <label class="setting-label">Color
+          <input type="color" name="color" value="#4ade80" />
+        </label>
+        <button class="btn btn-accent" type="submit">Add card</button>
+      </form>
+    </aside>
 
     <script id="initial-health" type="application/json">{{ deep_json | safe }}</script>
     <script id="initial-metrics" type="application/json">{{ metrics_json | safe }}</script>
@@ -720,12 +637,188 @@
       const railwayStatus = document.getElementById("railway-status");
       const railwayHost = document.getElementById("railway-host");
       const railwayTime = document.getElementById("railway-time");
-      const groqBody = document.getElementById("groq-body");
-      const groqForm = document.getElementById("groq-form");
-      const groqAdvanced = document.getElementById("groq-advanced");
-      const groqAdvancedToggle = document.getElementById("groq-advanced-toggle");
-      const groqJson = document.getElementById("groq-json");
-      const groqCurl = document.getElementById("groq-curl");
+      const settingsPanel = document.getElementById("settings-panel");
+      const cardDeck = document.getElementById("card-deck");
+      const panelGrid = document.getElementById("panel-grid");
+      const columnRange = document.getElementById("column-range");
+      const columnLabel = document.getElementById("column-label");
+      const cardSelect = document.getElementById("card-select");
+      const cardColorPicker = document.getElementById("card-color-picker");
+      const cardSpan = document.getElementById("card-span");
+      const newCardForm = document.getElementById("new-card-form");
+
+      const colorInputs = {
+        bg: document.getElementById("color-bg"),
+        card: document.getElementById("color-card"),
+        accent: document.getElementById("color-accent"),
+        cardText: document.getElementById("color-card-text"),
+      };
+
+      const docStyle = document.documentElement.style;
+
+      Object.entries(colorInputs).forEach(([key, input]) => {
+        input?.addEventListener("input", (event) => {
+          const value = event.target.value;
+          if (key === "bg") docStyle.setProperty("--bg", value);
+          if (key === "card") docStyle.setProperty("--card", value);
+          if (key === "accent") docStyle.setProperty("--accent", value);
+          if (key === "cardText") docStyle.setProperty("--card-text", value);
+        });
+      });
+
+      if (columnRange) {
+        columnRange.addEventListener("input", () => {
+          cardDeck.style.setProperty("--card-columns", columnRange.value);
+          columnLabel.textContent = `${columnRange.value} column${columnRange.value === "1" ? "" : "s"}`;
+        });
+      }
+
+      function toggleSettings(state) {
+        if (typeof state === "boolean") {
+          settingsPanel.classList.toggle("open", state);
+        } else {
+          settingsPanel.classList.toggle("open");
+        }
+      }
+
+      function populateCardSelect() {
+        cardSelect.innerHTML = "";
+        const cards = Array.from(cardDeck.querySelectorAll(".stat-card"));
+        if (!cards.length) {
+          const opt = document.createElement("option");
+          opt.textContent = "No cards available";
+          cardSelect.appendChild(opt);
+          cardSelect.disabled = true;
+          cardColorPicker.disabled = true;
+          cardSpan.disabled = true;
+          return;
+        }
+        cardSelect.disabled = false;
+        cardColorPicker.disabled = false;
+        cardSpan.disabled = false;
+        cards.forEach((card) => {
+          const option = document.createElement("option");
+          option.value = card.dataset.cardId;
+          option.textContent = card.querySelector("header")?.textContent || card.dataset.cardId;
+          cardSelect.appendChild(option);
+        });
+        syncSelectedCardControls();
+      }
+
+      function syncSelectedCardControls() {
+        const card = getSelectedCard();
+        if (!card) return;
+        const currentColor = card.dataset.cardColor || getComputedStyle(card).backgroundColor;
+        cardColorPicker.value = rgbToHex(currentColor);
+        cardSpan.value = card.dataset.span || 1;
+      }
+
+      function getSelectedCard() {
+        const value = cardSelect.value;
+        if (!value) return null;
+        return cardDeck.querySelector(`.stat-card[data-card-id="${value}"]`);
+      }
+
+      cardSelect?.addEventListener("change", syncSelectedCardControls);
+      cardColorPicker?.addEventListener("input", () => {
+        const card = getSelectedCard();
+        if (!card) return;
+        card.style.background = cardColorPicker.value;
+        card.dataset.cardColor = cardColorPicker.value;
+      });
+      cardSpan?.addEventListener("input", () => {
+        const card = getSelectedCard();
+        if (!card) return;
+        card.dataset.span = cardSpan.value;
+      });
+
+      newCardForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = new FormData(newCardForm);
+        const card = document.createElement("article");
+        const slug = slugify(String(data.get("title")) || `card-${Date.now()}`);
+        card.className = "stat-card";
+        card.draggable = true;
+        card.dataset.cardId = slug;
+        card.innerHTML = `
+          <header>${escapeHtml(String(data.get("title")) || "Custom")}</header>
+          <p class="value">${escapeHtml(String(data.get("value")) || "-" )}</p>
+          <p class="hint">${escapeHtml(String(data.get("hint")) || "Custom stat")}</p>`;
+        card.style.background = data.get("color") || "#2a2a2a";
+        card.dataset.cardColor = data.get("color") || "#2a2a2a";
+        cardDeck.appendChild(card);
+        registerDraggable(card);
+        populateCardSelect();
+        newCardForm.reset();
+      });
+
+      function removeSelectedCard() {
+        const card = getSelectedCard();
+        if (!card) return;
+        if (!confirm("Remove this card?")) return;
+        card.remove();
+        populateCardSelect();
+      }
+
+      function rgbToHex(rgb) {
+        const values = rgb.match(/\d+/g);
+        if (!values) return "#2a2a2a";
+        return `#${values.map((val) => {
+          const hex = Number(val).toString(16).padStart(2, "0");
+          return hex;
+        }).join("")}`;
+      }
+
+      function slugify(text) {
+        return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `card-${Date.now()}`;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/[&<>"]/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+        }[char]));
+      }
+
+      function registerDraggable(el) {
+        el.addEventListener("dragstart", handleDragStart);
+        el.addEventListener("dragend", handleDragEnd);
+      }
+
+      function initDragAndDrop(containerSelector, itemSelector) {
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+        container.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          const dragging = document.querySelector(`${itemSelector}.dragging`);
+          if (!dragging) return;
+          const children = Array.from(container.querySelectorAll(itemSelector));
+          const afterElement = children.find((child) => {
+            const rect = child.getBoundingClientRect();
+            return event.clientY < rect.top + rect.height / 2;
+          });
+          if (!afterElement) {
+            container.appendChild(dragging);
+          } else {
+            container.insertBefore(dragging, afterElement);
+          }
+        });
+        container.querySelectorAll(itemSelector).forEach(registerDraggable);
+      }
+
+      function handleDragStart(event) {
+        event.currentTarget.classList.add("dragging");
+      }
+
+      function handleDragEnd(event) {
+        event.currentTarget.classList.remove("dragging");
+      }
+
+      initDragAndDrop("#card-deck", ".stat-card");
+      initDragAndDrop("#panel-grid", ".panel");
+      populateCardSelect();
 
       const statusClass = (status = "unknown") => {
         const normalized = status.toLowerCase();
@@ -737,9 +830,7 @@
 
       const fetchJSON = async (path) => {
         const response = await fetch(`${path}${tokenParam}`);
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
         return response.json();
       };
 
@@ -757,30 +848,27 @@
         Object.entries(entries).forEach(([name, payload]) => {
           if (name === "tools") return;
           const li = document.createElement("li");
-          const label = document.createElement("span");
-          label.textContent = name.replace(/_/g, " ");
-          const pill = document.createElement("span");
-          pill.className = `pill ${statusClass(payload.status)}`;
-          pill.textContent = (payload.status || "unknown").toUpperCase();
-          li.append(label, pill);
+          li.innerHTML = `<strong>${name.replace(/_/g, " ")}</strong> <span class="status-pill ${statusClass(payload.status)}">${(payload.status || "unknown").toUpperCase()}</span>`;
           target.appendChild(li);
         });
+        if (!target.children.length) {
+          const li = document.createElement("li");
+          li.className = "empty-state";
+          li.textContent = "No checks reported.";
+          target.appendChild(li);
+        }
       };
 
       const renderToolList = (entries = {}) => {
         toolList.innerHTML = "";
         Object.entries(entries).forEach(([name, payload]) => {
           const li = document.createElement("li");
-          const label = document.createElement("span");
-          label.textContent = name;
-          const pill = document.createElement("span");
-          pill.className = `pill ${statusClass(payload.status)}`;
-          pill.textContent = (payload.status || "unknown").toUpperCase();
-          li.append(label, pill);
+          li.innerHTML = `<strong>${name}</strong> <span class="status-pill ${statusClass(payload.status)}">${(payload.status || "unknown").toUpperCase()}</span>`;
           toolList.appendChild(li);
         });
         if (!Object.keys(entries).length) {
           const li = document.createElement("li");
+          li.className = "empty-state";
           li.textContent = "No diagnostics configured.";
           toolList.appendChild(li);
         }
@@ -801,7 +889,7 @@
         uptimeValue.textContent = formatDuration(data.uptime_seconds);
         requestsValue.textContent = data.total_requests ?? 0;
         errorsValue.textContent = data.total_errors ?? 0;
-        rateLimitValue.textContent = rateLimitValue.textContent; // retains server-provided label
+        rateLimitValue.textContent = rateLimitValue.textContent;
         metricsOutput.textContent = JSON.stringify(data, null, 2);
 
         pathTableBody.innerHTML = "";
@@ -821,12 +909,12 @@
         recentList.innerHTML = "";
         (data.recent_requests || []).slice(-10).forEach((req) => {
           const item = document.createElement("li");
-          item.className = "recent-item";
-          item.innerHTML = `<strong>${req.method} ${req.path}</strong><span>${Math.round(req.duration_ms)} ms · ${new Date(req.timestamp * 1000).toLocaleTimeString()}</span>`;
+          item.innerHTML = `<strong>${req.method} ${req.path}</strong><span class="subtitle">${Math.round(req.duration_ms)} ms · ${new Date(req.timestamp * 1000).toLocaleTimeString()}</span>`;
           recentList.appendChild(item);
         });
         if (!recentList.children.length) {
           const item = document.createElement("li");
+          item.className = "empty-state";
           item.textContent = "No requests recorded.";
           recentList.appendChild(item);
         }
@@ -848,83 +936,13 @@
         markRefreshed();
       };
 
-      function toggleGroqPanel(button) {
-        if (!groqBody) return;
-        groqBody.classList.toggle("collapsed");
-        const label = groqBody.classList.contains("collapsed") ? "Open dialog" : "Close dialog";
-        if (button) {
-          button.textContent = label;
-        }
-      }
-
-      function toggleGroqAdvanced() {
-        if (!groqAdvanced || !groqAdvancedToggle) return;
-        if (groqAdvanced.hasAttribute("open")) {
-          groqAdvanced.removeAttribute("open");
-          groqAdvancedToggle.textContent = "Show additional options";
-        } else {
-          groqAdvanced.setAttribute("open", "");
-          groqAdvancedToggle.textContent = "Hide additional options";
-        }
-      }
-
-      function fillGroqSample(fieldId, value) {
-        const field = document.getElementById(fieldId);
-        if (!field) return;
-        field.value = value;
-        previewGroqPayload();
-      }
-
-      function previewGroqPayload() {
-        if (!groqJson || !groqCurl) return;
-        const model = document.getElementById("groq-model")?.value.trim();
-        const prompt = document.getElementById("groq-prompt")?.value.trim();
-        if (!model || !prompt) {
-          groqJson.textContent = "Fill model and prompt to preview.";
-          groqCurl.textContent = "curl -X POST http://localhost:8000/mcp/groq_chat ...";
-          return;
-        }
-
-        const payload = { model, prompt };
-        const systemPrompt = document.getElementById("groq-system")?.value.trim();
-        if (systemPrompt) payload.system_prompt = systemPrompt;
-
-        const maxRaw = document.getElementById("groq-max")?.value;
-        if (maxRaw) {
-          const parsed = parseInt(maxRaw, 10);
-          if (!Number.isNaN(parsed)) payload.max_completion_tokens = parsed;
-        }
-
-        const tempRaw = document.getElementById("groq-temperature")?.value;
-        if (tempRaw !== undefined && tempRaw !== "") {
-          const parsed = parseFloat(tempRaw);
-          if (!Number.isNaN(parsed)) payload.temperature = parsed;
-        }
-
-        const topPRaw = document.getElementById("groq-top-p")?.value;
-        if (topPRaw !== undefined && topPRaw !== "") {
-          const parsed = parseFloat(topPRaw);
-          if (!Number.isNaN(parsed)) payload.top_p = parsed;
-        }
-
-        groqJson.textContent = JSON.stringify(payload, null, 2);
-        const curlBody = JSON.stringify(payload).replace(/"/g, '\\"');
-        const curlCommand = [
-          "curl -X POST http://localhost:8000/mcp/groq_chat \\",
-          "  -H \"Content-Type: application/json\" \\",
-          `  -d "${curlBody}"`,
-        ].join("\n");
-        groqCurl.textContent = curlCommand;
-      }
-
       const markRefreshed = () => {
         lastUpdatedEl.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
       };
 
       async function refreshHealth() {
         try {
-          const data = await fetchJSON("/admin/api/health/deep");
-          renderHealth(data);
+          renderHealth(await fetchJSON("/admin/api/health/deep"));
         } catch (error) {
           console.error(error);
         }
@@ -932,8 +950,7 @@
 
       async function refreshRailway() {
         try {
-          const data = await fetchJSON("/admin/api/health/railway");
-          renderRailway(data);
+          renderRailway(await fetchJSON("/admin/api/health/railway"));
         } catch (error) {
           console.error(error);
         }
@@ -941,8 +958,7 @@
 
       async function refreshMetrics() {
         try {
-          const data = await fetchJSON("/admin/api/metrics");
-          renderMetrics(data);
+          renderMetrics(await fetchJSON("/admin/api/metrics"));
         } catch (error) {
           console.error(error);
         }
@@ -950,8 +966,7 @@
 
       async function refreshLogs() {
         try {
-          const data = await fetchJSON("/admin/api/logs");
-          renderLogs(data);
+          renderLogs(await fetchJSON("/admin/api/logs"));
         } catch (error) {
           console.error(error);
         }
@@ -966,41 +981,52 @@
         ]);
       }
 
-      autoRefreshToggle.addEventListener("change", () => {
-        if (autoRefreshToggle.checked) {
-          refreshEverything();
-        }
+      autoRefreshToggle?.addEventListener("change", () => {
+        if (autoRefreshToggle.checked) refreshEverything();
       });
 
       setInterval(() => {
-        if (autoRefreshToggle.checked) {
-          refreshEverything();
-        }
+        if (autoRefreshToggle.checked) refreshEverything();
       }, AUTO_REFRESH_MS);
 
       const healthSeed = document.getElementById("initial-health");
       const metricsSeed = document.getElementById("initial-metrics");
       try {
-        if (healthSeed?.textContent) {
-          renderHealth(JSON.parse(healthSeed.textContent));
-        }
-        if (metricsSeed?.textContent) {
-          renderMetrics(JSON.parse(metricsSeed.textContent));
-        }
+        if (healthSeed?.textContent) renderHealth(JSON.parse(healthSeed.textContent));
+        if (metricsSeed?.textContent) renderMetrics(JSON.parse(metricsSeed.textContent));
       } catch (error) {
         console.warn("Failed to hydrate dashboard", error);
       }
 
-      if (groqForm) {
-        groqForm.addEventListener("input", () => previewGroqPayload());
-      }
-      if (groqAdvanced && groqAdvancedToggle && !groqAdvanced.hasAttribute("open")) {
-        groqAdvancedToggle.textContent = "Show additional options";
-      }
-      previewGroqPayload();
-
       refreshRailway();
       refreshLogs();
+      previewGroqPayload();
+
+      function previewGroqPayload() {
+        const model = document.getElementById("groq-model")?.value.trim();
+        const prompt = document.getElementById("groq-prompt")?.value.trim();
+        const jsonBox = document.getElementById("groq-json");
+        const curlBox = document.getElementById("groq-curl");
+        if (!model || !prompt) {
+          jsonBox.textContent = "Fill model and prompt to preview.";
+          curlBox.textContent = "curl -X POST http://localhost:8000/mcp/groq_chat ...";
+          return;
+        }
+        const payload = { model, prompt };
+        const system = document.getElementById("groq-system")?.value.trim();
+        if (system) payload.system_prompt = system;
+        const max = document.getElementById("groq-max")?.value;
+        if (max) payload.max_completion_tokens = Number(max);
+        const temp = document.getElementById("groq-temperature")?.value;
+        if (temp) payload.temperature = Number(temp);
+        const topP = document.getElementById("groq-top-p")?.value;
+        if (topP) payload.top_p = Number(topP);
+        jsonBox.textContent = JSON.stringify(payload, null, 2);
+        const curlBody = JSON.stringify(payload).replace(/"/g, '\\"');
+        curlBox.textContent = `curl -X POST http://localhost:8000/mcp/groq_chat \\\n  -H "Content-Type: application/json" \\\n  -d "${curlBody}"`;
+      }
+
+      document.getElementById("groq-form")?.addEventListener("input", previewGroqPayload);
     </script>
   </body>
 </html>
