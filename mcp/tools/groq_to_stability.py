@@ -205,7 +205,7 @@ class GroqToStabilityRequest(BaseModel):
         description="Configure whether/how the resulting image should be stored inside Mixbread.",
     )
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_context_source(cls, values):
         if not values.get("context_override") and not values.get("selections"):
             raise ValueError("Provide either selections or context_override for Groq")
