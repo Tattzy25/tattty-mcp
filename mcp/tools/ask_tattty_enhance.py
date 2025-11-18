@@ -21,10 +21,10 @@ class AskTatttyEnhanceRequest(BaseModel):
     )
     temperature: float = Field(0.4, ge=0.0, le=2.0, description="Sampling temperature for Groq.")
     max_tokens: int = Field(
-        65536,
+        8192,
         ge=64,
-        le=65536,
-        description="Token cap for the enhanced story (defaults to Groq max).",
+        le=8192,
+        description="Token cap for the enhanced story (Groq limit).",
     )
     top_p: float | None = Field(
         default=None,
