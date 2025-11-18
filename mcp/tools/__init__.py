@@ -6,8 +6,18 @@ from typing import Awaitable, Callable, Dict
 
 from pydantic import BaseModel
 
+from .ask_tattty_enhance import (
+    AskTatttyEnhanceRequest,
+    diagnostics as ask_tattty_diag,
+    run as ask_tattty_run,
+)
 from .echo import EchoRequest, diagnostics as echo_diag, run as echo_run
 from .groq_chat import GroqChatRequest, diagnostics as groq_diag, run as groq_run
+from .groq_to_stability import (
+    GroqToStabilityRequest,
+    diagnostics as groq_to_stability_diag,
+    run as groq_to_stability_run,
+)
 from .resize_image import (
     ResizeImageRequest,
     diagnostics as resize_image_diag,
@@ -73,6 +83,12 @@ TOOL_REGISTRY: Dict[str, ToolDefinition] = {
         description="Returns the supplied string along with request metadata.",
         diagnostic=echo_diag,
     ),
+    "ask_tattty_enhance": ToolDefinition(
+        request_model=AskTatttyEnhanceRequest,
+        handler=ask_tattty_run,
+        description="Polish first-person stories with the TaTTTy enhancer (Groq).",
+        diagnostic=ask_tattty_diag,
+    ),
     "resize_image": ToolDefinition(
         request_model=ResizeImageRequest,
         handler=resize_image_run,
@@ -90,6 +106,12 @@ TOOL_REGISTRY: Dict[str, ToolDefinition] = {
         handler=groq_run,
         description="Calls the Groq chat completion API and returns the reply.",
         diagnostic=groq_diag,
+    ),
+    "groq_to_stability": ToolDefinition(
+        request_model=GroqToStabilityRequest,
+        handler=groq_to_stability_run,
+        description="Compose a prompt with Groq and immediately render it with Stability SD3.5.",
+        diagnostic=groq_to_stability_diag,
     ),
     "stability_sd35_generate": ToolDefinition(
         request_model=Sd35GenerateRequest,
