@@ -280,7 +280,7 @@ def run(
     mixbread_result: dict | None = None
     if mixbread_options.enabled:
         report(66, "Uploading to Mixedbread...")
-        mixbread_result = _store_with_mixbread(
+        mixbread_result = store_with_mixbread(
             request=request,
             context=context,
             groq_prompt=groq_prompt,
@@ -321,7 +321,7 @@ def _normalize_selection_value(value: Any) -> str | None:
     return normalized or None
 
 
-def _store_with_mixbread(
+def store_with_mixbread(
     *,
     request: GroqToStabilityRequest,
     context: str,

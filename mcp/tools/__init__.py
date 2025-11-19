@@ -19,6 +19,7 @@ from .groq_to_stability import (
     diagnostics as groq_to_stability_diag,
     run as groq_to_stability_run,
 )
+from .list_tools import ListToolsRequest, run as list_tools_run
 from .resize_image import (
     ResizeImageRequest,
     diagnostics as resize_image_diag,
@@ -44,6 +45,7 @@ from .stability_control_style_transfer import (
     diagnostics as control_style_transfer_diag,
     run as control_style_transfer_run,
 )
+from .stability_direct import DirectStabilityRequest, run as stability_direct_run
 from .stability_remove_background import (
     RemoveBackgroundRequest,
     diagnostics as remove_background_diag,
@@ -81,6 +83,11 @@ class ToolDefinition:
 
 
 TOOL_REGISTRY: Dict[str, ToolDefinition] = {
+    "list_tools": ToolDefinition(
+        request_model=ListToolsRequest,
+        handler=list_tools_run,
+        description="Enumerate every MCP tool exposed by this server.",
+    ),
     "echo": ToolDefinition(
         request_model=EchoRequest,
         handler=echo_run,
@@ -117,6 +124,12 @@ TOOL_REGISTRY: Dict[str, ToolDefinition] = {
         handler=groq_to_stability_run,
         description="Compose a prompt with Groq and immediately render it with Stability SD3.5.",
         diagnostic=groq_to_stability_diag,
+        supports_progress=True,
+    ),
+    "stability_direct": ToolDefinition(
+        request_model=DirectStabilityRequest,
+        handler=stability_direct_run,
+        description="Send prompts directly to Stability SD3.5 and optionally upload to Mixedbread.",
         supports_progress=True,
     ),
     "stability_sd35_generate": ToolDefinition(
