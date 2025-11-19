@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import base64
+import threading
+import time
 from uuid import uuid4
 from typing import Any, Callable, Dict, Literal
 
@@ -266,14 +268,15 @@ def run(
     )
     groq_response = groq_run(groq_request)
     report(33, "Prompt enhanced")
-    report(33, "Generating image with Stability AI...")
+    report(34, "Generating image with Stability AI...")
     composed_prompt = groq_response["content"].strip()
 
     stability_payload = request.stability.dict(exclude_none=True)
     _apply_selection_overrides(stability_payload, request.selections)
     stability_payload["prompt"] = composed_prompt
     stability_request = Sd35GenerateRequest(**stability_payload)
-    stability_response = stability_run(stability_request)
+    with _StreamingProgress(report, start=35, end=65, interval_seconds=1.5):
+        stability_response = stability_run(stability_request)
     report(66, "Image generated")
 
     mixbread_options = request.mixbread or MixbreadOptions()
@@ -300,6 +303,44 @@ def run(
         "stability": stability_response,
         "mixbread": mixbread_result,
     }
+
+
+class _StreamingProgress:
+    """Continuously emits progress while waiting on long-running Stability calls."""
+
+    def __init__(
+        self,
+        reporter: Callable[[int, str], None],
+        *,
+        start: int,
+        end: int,
+        interval_seconds: float,
+    ) -> None:
+        self._reporter = reporter
+        self._current = start
+        self._end = end
+        self._interval = interval_seconds
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="stability-progress", daemon=True)
+
+    def __enter__(self) -> "_StreamingProgress":
+        self._thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:  # type: ignore[override]
+        self.stop()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread.is_alive():
+            self._thread.join(timeout=0.5)
+
+    def _run(self) -> None:
+        while not self._stop.is_set() and self._current <= self._end:
+            self._reporter(self._current, "Generating image with Stability AI...")
+            self._current = min(self._current + 2, self._end)
+            if self._stop.wait(self._interval):
+                break
 
 
 def _apply_selection_overrides(payload: Dict[str, Any], selections: Dict[str, str]) -> None:
