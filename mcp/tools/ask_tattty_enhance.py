@@ -3,11 +3,16 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, AsyncIterator, Dict
 
 from pydantic import BaseModel, Field
 
-from .groq_chat import GroqChatRequest, diagnostics as groq_diag, run as groq_run
+from .groq_chat import (
+    GroqChatRequest,
+    diagnostics as groq_diag,
+    run as groq_run,
+    stream as groq_stream,
+)
 
 MODEL_NAME = "openai/gpt-oss-120b"
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "ask_tattty_system.txt"
@@ -74,6 +79,49 @@ def run(request: AskTatttyEnhanceRequest) -> Dict[str, Any]:
         "enhanced_story": enhanced_story,
         "model": response.get("model", request.model),
         "usage": response.get("usage"),
+    }
+
+
+async def stream(request: AskTatttyEnhanceRequest) -> AsyncIterator[Dict[str, Any]]:
+    system_prompt = _load_system_prompt()
+    user_message = _compose_user_payload(request.story, request.guidance)
+
+    groq_request = GroqChatRequest(
+        prompt=user_message,
+        system_prompt=system_prompt,
+        model=request.model,
+        max_tokens=request.max_tokens,
+        temperature=request.temperature,
+        top_p=request.top_p,
+    )
+
+    chunks: list[str] = []
+    final_model = request.model
+    usage: Dict[str, Any] | None = None
+
+    async for event in groq_stream(groq_request):
+        choices = event.get("choices", [])
+        if not choices:
+            continue
+        choice = choices[0]
+        delta = choice.get("delta") or {}
+        content = delta.get("content")
+        if content:
+            chunks.append(content)
+            yield {"event": "token", "content": content}
+        finish_reason = choice.get("finish_reason")
+        if finish_reason:
+            usage = event.get("usage", usage)
+            final_model = event.get("model", final_model)
+
+    enhanced_story = "".join(chunks).strip()
+    yield {
+        "event": "completed",
+        "result": {
+            "enhanced_story": enhanced_story,
+            "model": final_model,
+            "usage": usage,
+        },
     }
 
 

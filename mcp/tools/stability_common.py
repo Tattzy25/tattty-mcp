@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 from urllib.parse import urlsplit
 
 import httpx
@@ -28,7 +29,7 @@ class BaseStabilityRequest(BaseModel):
 
 
 class ImageInput(BaseModel):
-    """Represents an image payload that can be fetched via URL or provided inline as base64."""
+    """Represents an image payload sourced from a URL or inline base64."""
 
     url: HttpUrl | None = Field(
         default=None,
@@ -36,7 +37,7 @@ class ImageInput(BaseModel):
     )
     base64_data: str | None = Field(
         default=None,
-        description="Base64-encoded image bytes. data: URIs are also supported.",
+        description="Base64-encoded image body (data URIs supported).",
     )
     filename: str | None = Field(
         default=None,
@@ -44,13 +45,13 @@ class ImageInput(BaseModel):
     )
     content_type: str | None = Field(
         default=None,
-        description="Optional MIME type override (defaults to request headers or image/png).",
+        description="Optional MIME type override (defaults to detected type or image/png).",
     )
 
     @root_validator(skip_on_failure=True)
     def _ensure_source(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if not values.get("url") and not values.get("base64_data"):
-            raise ValueError("Provide either 'url' or 'base64_data' for ImageInput")
+            raise ValueError("ImageInput requires either 'url' or 'base64_data'")
         return values
 
 
@@ -67,25 +68,14 @@ def get_api_key(override: str | None) -> str:
     return api_key
 
 
-def _strip_data_url(data: str) -> str:
-    if data.startswith("data:"):
-        try:
-            _, payload = data.split(",", 1)
-            return payload
-        except ValueError:
-            return data
-    return data
-
-
-def _decode_base64(data: str) -> bytes:
-    cleaned = _strip_data_url(data.strip())
-    return base64.b64decode(cleaned)
-
-
-def _filename_from_url(url: HttpUrl, fallback: str) -> str:
+def _filename_from_url(url: HttpUrl) -> str:
     parsed = urlsplit(str(url))
     name = os.path.basename(parsed.path)
-    return name or fallback
+    if not name:
+        raise ValueError(
+            "Image URL must include a filename component; provide one via 'filename' if the URL omits it"
+        )
+    return name
 
 
 def _download_url(url: HttpUrl) -> tuple[bytes, str | None]:
@@ -98,16 +88,42 @@ def _download_url(url: HttpUrl) -> tuple[bytes, str | None]:
 def _prepare_file(field: str, image: ImageInput) -> tuple[str, bytes, str]:
     if image.url:
         content, detected_type = _download_url(image.url)
-        filename = image.filename or _filename_from_url(image.url, f"{field}.bin")
+        filename = image.filename or _filename_from_url(image.url)
         content_type = image.content_type or detected_type or "application/octet-stream"
         return filename, content, content_type
 
-    if not image.base64_data:
-        raise ValueError(f"Image input '{field}' is missing both url and base64 data")
-    content = _decode_base64(image.base64_data)
-    filename = image.filename or f"{field}.bin"
-    content_type = image.content_type or "application/octet-stream"
-    return filename, content, content_type
+    if image.base64_data:
+        content, inferred_type = _decode_base64_image(image.base64_data, image.content_type)
+        filename = image.filename or _default_filename(field, inferred_type)
+        return filename, content, inferred_type
+
+    raise ValueError(f"Image input '{field}' is missing both url and base64_data")
+
+
+def _decode_base64_image(encoded: str, override_type: str | None) -> Tuple[bytes, str]:
+    header, sep, payload = encoded.partition(",")
+    mime_hint: str | None = None
+    if header.startswith("data:") and sep:
+        mime_hint = header[5:].split(";")[0] or None
+        encoded_payload = payload
+    else:
+        encoded_payload = encoded
+    try:
+        content = base64.b64decode(encoded_payload, validate=True)
+    except binascii.Error as exc:  # pragma: no cover - defensive
+        raise ValueError("Invalid base64 image payload") from exc
+    content_type = override_type or mime_hint or "application/octet-stream"
+    return content, content_type
+
+
+def _default_filename(field: str, content_type: str | None) -> str:
+    if content_type and "/" in content_type:
+        extension = content_type.split("/")[-1].lower()
+        if extension == "jpeg":
+            extension = "jpg"
+    else:
+        extension = "bin"
+    return f"{field}.{extension}"
 
 
 def build_file_payload(images: Dict[str, ImageInput | None]) -> Dict[str, tuple[str, bytes, str]]:

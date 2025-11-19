@@ -1,6 +1,6 @@
 # Streamable MCP HTTP Toolkit
 
-A production-ready FastAPI application that exposes MCP-style tools over plain HTTP. The server ships with three tools (echo, resize-image, text-stats), supports bearer auth, per-IP rate limiting, OpenAPI docs, an authenticated admin panel, health checks (including Railway-specific reporting), structured JSON logging, and can be deployed via Docker, ngrok, or any container platform.
+A production-ready FastAPI application that implements the Model Context Protocol (MCP) HTTP transport end-to-end. The server now speaks JSON-RPC 2.0 over a single `/mcp` endpoint, maintains long-lived sessions, streams progress through Server-Sent Events (SSE), supports bearer auth, per-IP rate limiting, OpenAPI docs, an authenticated admin panel, health checks (including Railway-specific reporting), structured JSON logging, and can be deployed via Docker, ngrok, or any container platform.
 
 ## Prerequisites
 
@@ -19,6 +19,73 @@ uvicorn mcp.server:app --host 0.0.0.0 --port 8000
 ```
 
 Swagger UI is available at `http://localhost:8000/docs`.
+
+## MCP Protocol Endpoints
+
+### 1. Initialize a Session
+
+```json
+POST /mcp
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-03-26"
+  }
+}
+```
+
+Response headers include `Mcp-Session-Id`. Reuse that value for every subsequent request.
+
+### 2. Open the Event Stream
+
+```http
+GET /mcp
+Accept: text/event-stream
+Mcp-Session-Id: sess_abc123
+```
+
+The SSE connection stays open and delivers `notifications/progress`, heartbeat pings, and final tool results.
+
+### 3. List Tools
+
+```json
+POST /mcp
+Headers: Mcp-Session-Id: sess_abc123
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list"
+}
+```
+
+### 4. Call a Tool
+
+```json
+POST /mcp
+Headers: Mcp-Session-Id: sess_abc123
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "groq_to_stability",
+    "arguments": {
+      "selections": {"style": "Japanese", "color": "Full Color"},
+      "additional_notes": ["Dragon sleeve"],
+      "stability": {"model": "sd3.5-large"}
+    }
+  }
+}
+```
+
+The POST request returns `{ "status": "processing" }` immediately. The SSE stream emits:
+
+1. `notifications/progress` events (e.g., enhancing prompt, generating image, uploading to Mixedbread)
+2. A final JSON-RPC result with `content: [{"type": "text", "text": "{...}"}]`
+
+Sessions expire after one hour of inactivity (configurable). Open a new session if you receive a `session_closed` notification or an invalid-session error.
 
 ## Configuring the Server
 
@@ -40,24 +107,40 @@ Environment overrides are also supported (e.g. `MCP_PORT=9000`, `MCP_ADMIN_TOKEN
 
 ## Built-in Tools
 
-| Tool | Description | Sample Call |
+| Tool | Description | Sample `arguments` payload |
 | --- | --- | --- |
-| `echo` | Returns your message plus metadata. | `curl -X POST http://localhost:8000/mcp/echo -H "Content-Type: application/json" -d '{"message":"Hi"}'` |
-| `resize_image` | Resizes a remote image and returns base64 PNG/JPEG/WEBP. | `curl -X POST http://localhost:8000/mcp/resize_image -H "Content-Type: application/json" -d '{"image_url":"https://i.imgur.com/xyz.png","width":320,"height":240,"format":"PNG"}'` |
-| `text_stats` | Counts characters, words, sentences, and reading time. | `curl -X POST http://localhost:8000/mcp/text_stats -H "Content-Type: application/json" -d '{"text":"Hello world!"}'` |
-| `groq_chat` | Sends a prompt to Groq's chat completion API (requires `GROQ_API_KEY`). | `curl -X POST http://localhost:8000/mcp/groq_chat -H "Content-Type: application/json" -d '{"prompt":"Summarise this server"}'` |
-| `ask_tattty_enhance` | Enhances first-person stories with the TaTTTy prompt-polish workflow (Groq `openai/gpt-oss-120b`). | `curl -X POST http://localhost:8000/mcp/ask_tattty_enhance -H "Content-Type: application/json" -d '{"story":"my raw story"}'` |
-| `stability_sd35_generate` | Text/image-to-image generation via SD3.5 Large/Large Turbo. | `curl -X POST http://localhost:8000/mcp/stability_sd35_generate -H "Content-Type: application/json" -d '{"prompt":"a neon fox","model":"sd3.5-large"}'` |
-| `stability_remove_background` | Removes backgrounds while keeping transparent output. | `curl -X POST http://localhost:8000/mcp/stability_remove_background -H "Content-Type: application/json" -d '{"image":{"url":"https://..."}}'` |
-| `stability_replace_background` | Async background replacement + relight with optional references. | `curl -X POST http://localhost:8000/mcp/stability_replace_background -H "Content-Type: application/json" -d '{"subject_image":{"url":"https://..."},"background_prompt":"studio backdrop"}'` |
-| `stability_upscale_conservative` | Conservative upscaler with creativity + prompt guidance. | `curl -X POST http://localhost:8000/mcp/stability_upscale_conservative -H "Content-Type: application/json" -d '{"prompt":"hi-res portrait","image":{"url":"https://..."}}'` |
-| `stability_control_sketch` | Sketch control (structure derived from a drawing). | `curl -X POST http://localhost:8000/mcp/stability_control_sketch -H "Content-Type: application/json" -d '{"prompt":"render the sketch","image":{"url":"https://..."}}'` |
-| `stability_control_structure` | Structure control (layout guidance from reference image). | `curl -X POST http://localhost:8000/mcp/stability_control_structure -H "Content-Type: application/json" -d '{"prompt":"evening city","image":{"url":"https://..."}}'` |
-| `stability_control_style` | Style Guide (apply aesthetic from a single reference). | `curl -X POST http://localhost:8000/mcp/stability_control_style -H "Content-Type: application/json" -d '{"prompt":"vintage poster","image":{"url":"https://..."}}'` |
-| `stability_control_style_transfer` | Style Transfer (init + style images, optional prompts). | `curl -X POST http://localhost:8000/mcp/stability_control_style_transfer -H "Content-Type: application/json" -d '{"init_image":{"url":"https://..."},"style_image":{"url":"https://..."}}'` |
-| `groq_to_stability` | Single call that asks Groq for a revised prompt/context and feeds it into SD3.5. | `curl -X POST http://localhost:8000/mcp/groq_to_stability -H "Content-Type: application/json" -d '{"prompt":"cyberpunk mascot","context":{"audience":"mobile gamers"}}'` |
+| `echo` | Returns your message plus metadata. | `{"message":"Hi"}` |
+| `resize_image` | Resizes a remote image and returns base64 PNG/JPEG/WEBP. | `{"image_url":"https://i.imgur.com/xyz.png","width":320,"height":240,"format":"PNG"}` |
+| `text_stats` | Counts characters, words, sentences, and reading time. | `{"text":"Hello world!"}` |
+| `groq_chat` | Sends a prompt to Groq's chat completion API (requires `GROQ_API_KEY`). | `{"prompt":"Summarise this server"}` |
+| `ask_tattty_enhance` | Enhances first-person stories with the TaTTTy prompt-polish workflow (Groq `openai/gpt-oss-120b`). | `{"story":"my raw story"}` |
+| `stability_sd35_generate` | Text/image-to-image generation via SD3.5 Large/Large Turbo. | `{"prompt":"a neon fox","model":"sd3.5-large"}` |
+| `stability_remove_background` | Removes backgrounds while keeping transparent output. | `{"image":{"url":"https://..."}}` |
+| `stability_replace_background` | Async background replacement + relight with optional references. | `{"subject_image":{"url":"https://..."},"background_prompt":"studio backdrop"}` |
+| `stability_upscale_conservative` | Conservative upscaler with creativity + prompt guidance. | `{"prompt":"hi-res portrait","image":{"url":"https://..."}}` |
+| `stability_control_sketch` | Sketch control (structure derived from a drawing). | `{"prompt":"render the sketch","image":{"url":"https://..."}}` |
+| `stability_control_structure` | Structure control (layout guidance from reference image). | `{"prompt":"evening city","image":{"url":"https://..."}}` |
+| `stability_control_style` | Style Guide (apply aesthetic from a single reference). | `{"prompt":"vintage poster","image":{"url":"https://..."}}` |
+| `stability_control_style_transfer` | Style Transfer (init + style images, optional prompts). | `{"init_image":{"url":"https://..."},"style_image":{"url":"https://..."}}` |
+| `groq_to_stability` | Single call that asks Groq for a revised prompt/context and feeds it into SD3.5. | `{"selections":{"style":"Japanese"},"stability":{"model":"sd3.5-large"}}` |
+
+Invoke any tool by passing these `arguments` into the `tools/call` JSON-RPC request shown in the previous section.
 
 Add more tools by dropping a new module in `mcp/tools/` and registering it inside `mcp/tools/__init__.py`.
+
+## HTTP Streaming Details
+
+- Progress and results are delivered exclusively through the SSE connection opened with `GET /mcp`.
+- Each JSON-RPC notification arrives as a separate SSE data line. Expect `notifications/progress`, `notifications/heartbeat`, optional `notifications/session_closed`, and final `result` objects.
+- The `groq_to_stability` tool emits the following progress milestones by default:
+  1. `Enhancing prompt with Groq...`
+  2. `Prompt enhanced`
+  3. `Generating image with Stability AI...`
+  4. `Image generated`
+  5. `Uploading to Mixedbread...`
+  6. `Complete`
+- Other tools emit at least `Running <tool>` and `Complete` messages.
+- Errors follow JSON-RPC 2.0 conventions (`-32700` parse error, `-32600` invalid request, `-32601` method not found, `-32602` invalid params, `-32603` internal error, `-32000` range for upstream/service failures).
 
 ### Stability AI Tools
 
@@ -65,7 +148,7 @@ Add more tools by dropping a new module in `mcp/tools/` and registering it insid
 - Optional tuning knobs: `STABILITY_API_BASE` (useful for staging), `STABILITY_HTTP_TIMEOUT`, `STABILITY_POLL_INTERVAL`, and `STABILITY_POLL_ATTEMPTS`.
 - Every Stability endpoint returns structured JSON with `images` (base64 payloads + metadata) and never exposes `/v2beta/results/{id}` as a public MCP tool. The only async flow (replace-background + relight) polls that endpoint internally and surfaces the ready image in a single response.
 - SD3.5 generation restricts `model` to `sd3.5-large` and `sd3.5-large-turbo`, matching the allowed plans.
-- Inputs that accept binary data use an `ImageInput` shape: either `{"url": "https://..."}` or `{"base64_data": "..."}` plus optional `filename`/`content_type` hints.
+- Inputs that accept binary data use an `ImageInput` shape with a single `{"url": "https://..."}` plus optional `filename`/`content_type` hints.
 
 ## Admin & Observability
 
@@ -122,6 +205,24 @@ Forward the resulting URL to collaborators (e.g. `https://abcd1234.ngrok.io/mcp/
 - Requires `GROQ_API_KEY` and targets Groq model `openai/gpt-oss-120b` by default (override with `model` if Groq adds a newer OSS tier).
 - Request body: `story` (required), optional `guidance` (tone, target audience, etc.), plus standard sampling knobs (`temperature`, `max_tokens`, `top_p`).
 - Response returns the polished `enhanced_story`, along with the Groq `model` + `usage` metadata you can pipe into downstream tooling.
+- Need token-by-token feedback? The HTTP endpoint already streams deltas, and `/ws/mcp` mirrors the same events if you prefer WebSockets.
+
+### MCP WebSocket Streaming
+
+- Open a WebSocket to `/ws/mcp` (include `Authorization: Bearer <secret>` if anonymous mode is disabled). On connect, the server emits a `hello` payload that lists every tool plus whether it supports streaming.
+- Send tool invocations using JSON of the form:
+
+  ```json
+  {
+    "type": "call_tool",
+    "call_id": "client-generated-uuid",
+    "tool": "ask_tattty_enhance",
+    "arguments": { "story": "...", "guidance": "..." }
+  }
+  ```
+
+- For streaming tools, the server replies with `call_stream` events that include incremental payloads. `ask_tattty_enhance` emits `{ "event": "token", "content": "..." }` for each Groq delta, then finishes with `{ "event": "completed", "result": { ... } }`. A final `call_completed` message with the same `call_id` confirms success.
+- Non-streaming tools still return a single `call_result` frame that mirrors the REST response.
 
 ### Groq → Stability Chain
 
@@ -154,5 +255,4 @@ pip install httpx  # required for FastAPI TestClient
 ### Next Ideas
 
 - Wrap CLI utilities (ffmpeg, pandoc, git) directly from tool handlers.
-- Stream large responses via `StreamingResponse` for chunked tool output.
 - Ship logs to a managed service (Papertrail, Logtail) for observability.

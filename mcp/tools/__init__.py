@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict
+from typing import AsyncIterator, Awaitable, Callable, Dict, Iterator
 
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ from .ask_tattty_enhance import (
     AskTatttyEnhanceRequest,
     diagnostics as ask_tattty_diag,
     run as ask_tattty_run,
+    stream as ask_tattty_stream,
 )
 from .echo import EchoRequest, diagnostics as echo_diag, run as echo_run
 from .groq_chat import GroqChatRequest, diagnostics as groq_diag, run as groq_run
@@ -66,6 +67,7 @@ from .stability_upscale_conservative import (
 from .text_stats import TextStatsRequest, diagnostics as text_stats_diag, run as text_stats_run
 
 ToolHandler = Callable[[BaseModel], Awaitable[dict] | dict]
+ToolStreamHandler = Callable[[BaseModel], AsyncIterator[dict] | Iterator[dict]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,8 @@ class ToolDefinition:
     handler: ToolHandler
     description: str
     diagnostic: Callable[[], dict] | None = None
+    stream_handler: ToolStreamHandler | None = None
+    supports_progress: bool = False
 
 
 TOOL_REGISTRY: Dict[str, ToolDefinition] = {
@@ -88,6 +92,7 @@ TOOL_REGISTRY: Dict[str, ToolDefinition] = {
         handler=ask_tattty_run,
         description="Polish first-person stories with the TaTTTy enhancer (Groq).",
         diagnostic=ask_tattty_diag,
+        stream_handler=ask_tattty_stream,
     ),
     "resize_image": ToolDefinition(
         request_model=ResizeImageRequest,
@@ -112,6 +117,7 @@ TOOL_REGISTRY: Dict[str, ToolDefinition] = {
         handler=groq_to_stability_run,
         description="Compose a prompt with Groq and immediately render it with Stability SD3.5.",
         diagnostic=groq_to_stability_diag,
+        supports_progress=True,
     ),
     "stability_sd35_generate": ToolDefinition(
         request_model=Sd35GenerateRequest,

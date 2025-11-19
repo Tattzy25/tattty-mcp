@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import base64
 from uuid import uuid4
-from typing import Any, Dict, Literal
+from typing import Any, Callable, Dict, Literal
 
 import httpx
 from pydantic import BaseModel, Field, root_validator
@@ -25,6 +25,19 @@ from .stability_sd35_generate import (
     diagnostics as stability_diagnostics,
     run as stability_run,
 )
+
+VALID_SD35_MODELS = {"sd3.5-large", "sd3.5-large-turbo"}
+VALID_ASPECT_RATIOS = {
+    "21:9",
+    "16:9",
+    "3:2",
+    "5:4",
+    "1:1",
+    "4:5",
+    "2:3",
+    "9:16",
+    "9:21",
+}
 
 DEFAULT_GROQ_TEMPLATE = (
     "You are enhancing creative briefs for Stability AI. Given the context below, "
@@ -218,9 +231,12 @@ def _format_context(request: GroqToStabilityRequest) -> str:
 
     lines: list[str] = []
     for key, value in request.selections.items():
-        if not value:
+        if value is None:
             continue
-        lines.append(f"{key}: {value}".strip())
+        normalized = str(value).strip()
+        if not normalized:
+            continue
+        lines.append(f"{key}: {normalized}")
     for note in request.additional_notes or []:
         if not note:
             continue
@@ -228,7 +244,15 @@ def _format_context(request: GroqToStabilityRequest) -> str:
     return "\n".join(filter(None, lines)).strip()
 
 
-def run(request: GroqToStabilityRequest) -> dict:
+def run(
+    request: GroqToStabilityRequest,
+    progress_callback: Callable[[int, str], None] | None = None,
+) -> dict:
+    def report(progress: int, message: str) -> None:
+        if progress_callback:
+            progress_callback(progress, message)
+
+    report(0, "Enhancing prompt with Groq...")
     context = _format_context(request)
     groq_prompt = request.groq_prompt_template.format(context=context)
 
@@ -241,16 +265,21 @@ def run(request: GroqToStabilityRequest) -> dict:
         top_p=request.top_p,
     )
     groq_response = groq_run(groq_request)
+    report(33, "Prompt enhanced")
+    report(33, "Generating image with Stability AI...")
     composed_prompt = groq_response["content"].strip()
 
     stability_payload = request.stability.dict(exclude_none=True)
+    _apply_selection_overrides(stability_payload, request.selections)
     stability_payload["prompt"] = composed_prompt
     stability_request = Sd35GenerateRequest(**stability_payload)
     stability_response = stability_run(stability_request)
+    report(66, "Image generated")
 
     mixbread_options = request.mixbread or MixbreadOptions()
     mixbread_result: dict | None = None
     if mixbread_options.enabled:
+        report(66, "Uploading to Mixedbread...")
         mixbread_result = _store_with_mixbread(
             request=request,
             context=context,
@@ -262,6 +291,7 @@ def run(request: GroqToStabilityRequest) -> dict:
     else:
         mixbread_result = {"status": "disabled"}
 
+    report(100, "Complete")
     return {
         "context": context,
         "groq_prompt": groq_prompt,
@@ -270,6 +300,25 @@ def run(request: GroqToStabilityRequest) -> dict:
         "stability": stability_response,
         "mixbread": mixbread_result,
     }
+
+
+def _apply_selection_overrides(payload: Dict[str, Any], selections: Dict[str, str]) -> None:
+    """Inject front-end selection overrides (model, aspect_ratio) into Stability options."""
+
+    model = _normalize_selection_value(selections.get("model"))
+    if model in VALID_SD35_MODELS:
+        payload["model"] = model
+
+    aspect_ratio = _normalize_selection_value(selections.get("aspect_ratio"))
+    if aspect_ratio in VALID_ASPECT_RATIOS:
+        payload["aspect_ratio"] = aspect_ratio
+
+
+def _normalize_selection_value(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None
 
 
 def _store_with_mixbread(

@@ -1,8 +1,9 @@
 """Groq chat completion tool."""
 from __future__ import annotations
 
+import json
 import os
-from typing import Any, Dict
+from typing import Any, AsyncIterator, Dict
 
 import httpx
 from pydantic import BaseModel, Field
@@ -46,6 +47,27 @@ def _call_groq(payload: Dict[str, Any], api_key: str) -> Dict[str, Any]:
         return response.json()
 
 
+async def _stream_groq(payload: Dict[str, Any], api_key: str) -> AsyncIterator[Dict[str, Any]]:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=None) as client:
+        async with client.stream("POST", GROQ_API_URL, headers=headers, json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line:
+                    continue
+                data_line = line
+                if data_line.startswith("data:"):
+                    data_line = data_line.split(":", 1)[1].strip()
+                if not data_line or data_line == "[DONE]":
+                    if data_line == "[DONE]":
+                        break
+                    continue
+                yield json.loads(data_line)
+
+
 def run(request: GroqChatRequest) -> dict:
     api_key = _get_api_key()
     messages = []
@@ -78,6 +100,28 @@ def run(request: GroqChatRequest) -> dict:
         "usage": usage,
         "raw": {"id": data.get("id"), "created": data.get("created")},
     }
+
+
+async def stream(request: GroqChatRequest) -> AsyncIterator[Dict[str, Any]]:
+    api_key = _get_api_key()
+    messages = []
+    if request.system_prompt:
+        messages.append({"role": "system", "content": request.system_prompt})
+    messages.append({"role": "user", "content": request.prompt})
+
+    payload = {
+        "model": request.model,
+        "messages": messages,
+        "max_tokens": request.max_tokens,
+        "temperature": request.temperature,
+        "stream": True,
+    }
+
+    if request.top_p is not None:
+        payload["top_p"] = request.top_p
+
+    async for event in _stream_groq(payload, api_key):
+        yield event
 
 
 def diagnostics() -> dict:

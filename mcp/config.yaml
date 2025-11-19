@@ -4,6 +4,10 @@ log_level: info
 allow_anonymous: true
 rate_limit_per_ip: 30
 cors:
-  allow_origins: ["*"]
+  allow_origins:
+    - "https://tattzy.app"
+    - "https://*.vercel.app"
+    - "http://localhost:5173"
+    - "http://localhost:3000"
   allow_methods: ["*"]
   allow_headers: ["*"]
